@@ -16,13 +16,62 @@ public class Table {
 
     // Liste de rows, on pourra filter la liste comme on veut sur n'importe quels attributs
     private List<List<Object>> rows = new ArrayList<>();
-
+    /* Les contraintes */
+    private final Constraints constraints = new Constraints();
     // indexes des colonnes de la clef primaire : les colonnes qui constituent la clef
     private List<Integer> primaryKeyIndexes;
-    private List<String> primaryKey;
+
 
     public Table(String name) {
         this.name = name;
+    }
+
+    public void addNotNullConstraints(List<String> columnNames){
+        for(String cName: columnNames){
+            constraints.addNotNullConstraint(cName);
+        }
+    }
+
+    public void addDefaultValues(List<Pair<String,?>> defaultvalues){
+        for(Pair<String,?> pair : defaultvalues){
+            constraints.addDefaultValue(pair.getLeft(), pair.getRight());
+        }
+    }
+
+    public void addUniqueConstraints(List<List<String>> uniqueConstraints){
+        for(List<String> uniqueConstraint: uniqueConstraints){
+            constraints.addUniqueConstraint(uniqueConstraint);
+        }
+    }
+
+    public void addCheckConstraints(List<CheckConstraint> checkConstraints){
+        for(CheckConstraint checkConstraint: checkConstraints){
+            constraints.addCheckConstraint(checkConstraint);
+        }
+    }
+
+    public void setPrimaryKeyColumns(List<String> pKColumns){
+        if(!(pKColumns.size()<= columns.size()) 
+        || !(columns.keySet().containsAll(pKColumns))){
+            throw new IllegalArgumentException
+            ("Table "+name+" : Une clef primaire doit-être une partie de (ou toute) la liste d'attributs");
+        }
+        ArrayList<Integer> pkIndexes = new ArrayList<>();
+        for(String key: pKColumns){
+            pkIndexes.add(getColumnIndex(key));
+        }
+        this.primaryKeyIndexes = pkIndexes;
+        constraints.setPrimaryKeyColumns(pKColumns);
+    }
+
+    public void addForeignKeyConstraints(List<ForeignKeyConstraint> foreignKeyConstraints, Database dBase){
+        for(ForeignKeyConstraint foreignKeyConstraint: foreignKeyConstraints){
+            if(!dBase.tableExists(foreignKeyConstraint.getReferencedTableName())){
+                throw new IllegalArgumentException
+                ("Table "+name+" : Une clef étrangère doit référencer une table existante.");
+            }
+            constraints.addForeignKeyConstraints(foreignKeyConstraint);
+        }
     }
 
     public void addColumn(String nomColonne, Class<?> typeColonne){
@@ -31,20 +80,6 @@ public class Table {
             ("Table "+name+" : La colonne "+nomColonne+" existe déjà.");
         }
         this.columns.put(nomColonne,typeColonne);
-    }
-
-    public void setPrimaryKey(List<String> primaryKey){
-        if(!(primaryKey.size()<= columns.size()) 
-        || !(columns.keySet().containsAll(primaryKey))){
-            throw new IllegalArgumentException
-            ("Table "+name+" : Une clef primaire doit-être une partie de (ou toute) la liste d'attributs");
-        }
-        ArrayList<Integer> pkIndexes = new ArrayList<>();
-        for(String key: primaryKey){
-            pkIndexes.add(getColumnIndex(key));
-        }
-        this.primaryKeyIndexes = pkIndexes;
-        this.primaryKey = primaryKey;
     }
 
     public String getName() {
@@ -89,10 +124,6 @@ public class Table {
     // Liste des attributs
     public List<String> getColumns(){
         return new ArrayList<>(columns.keySet());
-    }
-
-    public List<String> getPrimaryKey(){
-        return new ArrayList<>(primaryKey);
     }
 
     // retourne une nouvelle instance pour éviter de les pb de modifications

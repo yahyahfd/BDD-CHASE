@@ -42,6 +42,9 @@ public class Database {
         return new ArrayList<String>(tables.keySet());
     }
 
+    public boolean tableExists(String tableName){
+        return tables.containsKey(tableName);
+    }
     // méthode pour sauvegarder bd dans un fichier
     // méthode pour charger bd à partir d'un fichier
     // méthode de jointure tri, filtrage etc

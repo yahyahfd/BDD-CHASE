@@ -7,10 +7,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import fr.uparis.database.*;
 
-/**
- * Hello world!
- *
- */
 public class App 
 {
     public static void main( String[] args )
@@ -22,9 +18,10 @@ public class App
         etudiants.addColumn("NumEtudiant",Integer.class);
         etudiants.addColumn("Nom",String.class);
         etudiants.addColumn("Prenom",String.class);
+
         List<String> primaryKeys = new ArrayList<>();
         primaryKeys.add("NumEtudiant");
-        etudiants.setPrimaryKey(primaryKeys);
+        etudiants.setPrimaryKeyColumns(primaryKeys);
 
         List<Object> etudiant1 = new ArrayList<>();
         etudiant1.add(71800578);

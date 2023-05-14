@@ -18,23 +18,102 @@ public class Table {
     // Liste de rows, on pourra filter la liste comme on veut sur n'importe quels attributs
     private List<List<Object>> rows;
 
-    public Table(String name, Map<String, Class<?>> columns) {
+    // indexes des colonnes de la clef primaire : les colonnes qui constituent la clef
+    private final List<Integer> primaryKeyIndexes;
+    private final List<String> primaryKey;
+
+    public Table(String name, Map<String, Class<?>> columns, List<String> primaryKey) {
         this.name = name;
         this.columns = new LinkedHashMap<>(columns);
         this.rows = new ArrayList<>();
+        if(!(primaryKey.size()<= columns.size()) 
+        || !(columns.keySet().containsAll(primaryKey))){
+            throw new IllegalArgumentException
+            ("Table "+name+" : Une clef primaire doit-être une partie de (ou toute) la liste d'attributs");
+        }
+        ArrayList<Integer> pkIndexes = new ArrayList<>();
+        for(String key: primaryKey){
+            pkIndexes.add(getColumnIndex(key));
+        }
+        this.primaryKeyIndexes = pkIndexes;
+        this.primaryKey = primaryKey;
     }
 
     public String getName() {
         return name;
     }
 
-    public void insertRow(List<Object> rowValues) throws FormatException {
-        // code d'une hashmap que j'avais rajouté.
-        // Pour vérifier si c'est le meme objet, on se basera sur la clef primaire de la table.
-        // if(rows.containsKey(rowValues)){
-        //     throw new FormatException
-        //     ("Table "+name+" : L'objet "+object+" existe déjà dans la table.");
-        // }
+    // on garde pour l'instant, mais on devrait mettre final au name et retirer ce setter
+    public void renameTable(String name){
+        this.name = name;
+    }
+
+    private boolean deleteRow(List<Object> rowToDelete){
+        return rows.remove(rowToDelete);
+    }
+
+    public void deleteRows(List<List<Object>> rowsToDelete){
+        for(List<Object> rowToDelete : rowsToDelete){
+            if(!deleteRow(rowToDelete)){
+                throw new IllegalArgumentException
+                    ("Table "+name+" : Vous essatez de supprimer un tuple qui n'existe pas.");
+            }
+        }
+    }
+
+    private int getColumnIndex(String columnName){
+        int index = 0;
+        for(String column : columns.keySet()){
+            if(column.equals(columnName)){
+                return index;
+            }
+            index++;
+        }
+        throw new IllegalArgumentException
+            ("Table "+name+" : La colonne "+columnName+" n'existe pas.");
+    }
+
+    // nombre de tuples de ma table
+    public int getRowCount(){
+        return rows.size();
+    }
+
+    // Liste des attributs
+    public List<String> getColumns(){
+        return new ArrayList<>(columns.keySet());
+    }
+
+    public List<String> getPrimaryKey(){
+        return new ArrayList<>(primaryKey);
+    }
+
+    // retourne une nouvelle instance pour éviter de les pb de modifications
+    public List<List<Object>> getRows(){
+        return new ArrayList<>(rows);
+    }
+
+    private boolean rowDoublon(List<Object> rowValues){
+        for(List<Object> row :rows){
+            boolean doublon = true;
+            for(int i : primaryKeyIndexes){
+                if(rowValues.get(i).equals(row.get(i))){// c'est bon, on passe au row suivant
+                    doublon = false;
+                    break;
+                }
+            }
+            if(doublon) return doublon;
+        }
+        return false;
+    }
+
+    // rajoute un tuple à notre table s'il ne partage pas les mêmes clefs primaires
+    // qu'un tuple existant, etc...
+    public void addRow(List<Object> rowValues) throws FormatException {
+        if(rowDoublon(rowValues)){
+            throw new IllegalArgumentException
+            ("Table "+name
+            +" : Le tuple que vous souhaitez rajouter partage les mêmes valeurs de clef primaire d'un autre tuple existant");
+        }
         
         if (rowValues.size() != columns.size()){
             throw new FormatException
@@ -75,14 +154,4 @@ public class Table {
         return result;
     }
 
-    private int getColumnIndex(String columnName){
-        int index = 0;
-        for(String column : columns.keySet()){
-            if(column.equals(columnName)){
-                return index;
-            }
-            index++;
-        }
-        return -1;
-    }
 }

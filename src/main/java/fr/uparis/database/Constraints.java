@@ -1,5 +1,6 @@
 package fr.uparis.database;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,6 +24,34 @@ public class Constraints {
         foreignKeyConstraints = new HashSet<>();
     }
 
+    public Set<CheckConstraint> getCheckConstraints(){
+        return new HashSet<>(checkConstraints);
+    }
+    
+    public Set<String> getNotNullConstraints(){
+        return new HashSet<>(notNullConstraints);
+    }
+
+    public Map<String,Object> getDefaultValues(){
+        return new HashMap<>(defaultValues);
+    }
+    
+    public Set<String> getPrimaryKeyColumns(){
+        return new HashSet<>(primaryKeyColumns);
+    }
+
+    public Set<List<String>> getUniqueConstraints(){
+        Set<List<String>> result = new HashSet<>();
+        for(Set<String> uniqueConstraint : uniqueConstraints){
+            result.add(new ArrayList<>(uniqueConstraint));
+        }
+        return result;
+    }
+     
+    public Set<ForeignKeyConstraint> getForeignKeyConstraints(){
+        return new HashSet<>(foreignKeyConstraints);
+    }
+    
     public void addNotNullConstraint(String columnName){
         notNullConstraints.add(columnName);
     }

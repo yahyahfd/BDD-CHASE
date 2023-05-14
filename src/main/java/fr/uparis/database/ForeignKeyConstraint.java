@@ -1,22 +1,36 @@
 package fr.uparis.database;
 
 public class ForeignKeyConstraint {
-    private final String columnName;
+    /**
+     * Externe
+     */
+    private final String referencedColumn;
     private final String referencedTableName;
-    private final String referencedTableColumn;
+    /**
+     * Interne
+     */
+    private final String referencingColumn;
 
-    public ForeignKeyConstraint(String columnName, String referencedTableName, String referencedTableColumn) {
-        this.columnName = columnName;
+    public ForeignKeyConstraint(String referencedColumn, String referencedTableName, String referencingColumn) {
+        this.referencedColumn = referencedColumn;
         this.referencedTableName = referencedTableName;
-        this.referencedTableColumn = referencedTableColumn;
+        this.referencingColumn = referencingColumn;
     }
     
-    public String getColumnName() {
-        return columnName;
+    /**
+     * Externe
+     * @return
+     */
+    public String getReferencedColumn() {
+        return referencedColumn;
     }
 
-    public String getReferencedTableColumn() {
-        return referencedTableColumn;
+    /**
+     * Interne
+     * @return
+     */
+    public String getReferencingColumn() {
+        return referencingColumn;
     }
 
     public String getReferencedTableName() {

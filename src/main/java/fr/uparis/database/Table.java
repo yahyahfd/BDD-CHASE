@@ -5,6 +5,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import fr.uparis.exceptions.FormatException;
+import net.sourceforge.jeval.EvaluationException;
+
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class Table {
@@ -15,11 +18,11 @@ public class Table {
     private LinkedHashMap<String, Class<?>> columns = new LinkedHashMap<>();
 
     // Liste de rows, on pourra filter la liste comme on veut sur n'importe quels attributs
-    private List<List<Object>> rows = new ArrayList<>();
+    private final List<List<Object>> rows = new ArrayList<>();
     /* Les contraintes */
     private final Constraints constraints = new Constraints();
     // indexes des colonnes de la clef primaire : les colonnes qui constituent la clef
-    private List<Integer> primaryKeyIndexes;
+    private final List<Integer> primaryKeyIndexes = new ArrayList<>();
 
 
     public Table(String name) {
@@ -60,17 +63,45 @@ public class Table {
         for(String key: pKColumns){
             pkIndexes.add(getColumnIndex(key));
         }
-        this.primaryKeyIndexes = pkIndexes;
+        this.primaryKeyIndexes.clear();
+        this.primaryKeyIndexes.addAll(pkIndexes);
         constraints.setPrimaryKeyColumns(pKColumns);
     }
 
+    // On rajoute une liste de contrainte : une seule foreignKey à la fois
     public void addForeignKeyConstraints(List<ForeignKeyConstraint> foreignKeyConstraints, Database dBase){
+        List<String> referencedColumns = new ArrayList<>();
+        String referencedTableName = "";
         for(ForeignKeyConstraint foreignKeyConstraint: foreignKeyConstraints){
             if(!dBase.tableExists(foreignKeyConstraint.getReferencedTableName())){
                 throw new IllegalArgumentException
                 ("Table "+name+" : Une clef étrangère doit référencer une table existante.");
             }
+            if(referencedTableName.isEmpty())
+                referencedTableName = foreignKeyConstraint.getReferencedTableName();
+            if(!referencedTableName.equals(foreignKeyConstraint.getReferencedTableName()))
+                throw new IllegalArgumentException
+                ("Table "+name+" : Vous essayez de rajouter une contrainte sur différentes tables pour un même attribut.");
+                
+            referencedColumns.add(foreignKeyConstraint.getReferencedColumn());
             constraints.addForeignKeyConstraints(foreignKeyConstraint);
+        }
+        List<String> primaryKeys = new ArrayList<>(constraints.getPrimaryKeyColumns());
+        boolean notFound = true;
+        if(referencedColumns.containsAll(primaryKeys) && primaryKeys.containsAll(referencedColumns)){
+            notFound = false;
+        }
+        if(notFound){
+            List<List<String>> uniqueConstraints = new ArrayList<>(constraints.getUniqueConstraints());
+            for(List<String> uniqueConstraint :uniqueConstraints){
+                if(referencedColumns.containsAll(uniqueConstraint) && primaryKeys.containsAll(uniqueConstraint)){
+                    notFound = false;
+                }
+            }
+        }
+        if(notFound){
+            throw new IllegalArgumentException
+                ("Table "+name+" : Une clef étrangère doit être une clef unique ou une clef primaire.");
         }
     }
 
@@ -130,16 +161,18 @@ public class Table {
     public List<List<Object>> getRows(){
         return new ArrayList<>(rows);
     }
-
-    private boolean rowDoublon(List<Object> rowValues){
+    
+    // renvoie true si 100% similaire, false sinon
+    private boolean rowDoublon(List<Object> rowValues, List<String> columnNames){
         for(List<Object> row :rows){
             boolean doublon = true;
-            for(int i : primaryKeyIndexes){
-                if(!rowValues.get(i).equals(row.get(i))){// c'est bon, on passe au row suivant
+            for(String columnName: columnNames){
+                int indexColumn = getColumnIndex(columnName);
+                if(!rowValues.get(indexColumn).equals(row.get(indexColumn))){// c'est bon, on passe au row suivant
                     doublon = false;
                     break;
                 }
-            }
+            }   
             if(doublon) return doublon;
         }
         return false;
@@ -147,30 +180,97 @@ public class Table {
 
     // rajoute un tuple à notre table s'il ne partage pas les mêmes clefs primaires
     // qu'un tuple existant, etc...
-    public void addRow(List<Object> rowValues) throws FormatException {
-        if(rowDoublon(rowValues)){
+    public void addRow(List<MutablePair<String,Object>> columnValues, Database dBase) throws FormatException, EvaluationException {
+        List<Object> rowValues = new ArrayList<>();
+        for(Pair<String,Object> pair : columnValues){
+            rowValues.add(pair.getRight());
+        }
+        List<Class<?>> columnTypes = new ArrayList<>(columns.values());
+        List<String> notNull = new ArrayList<>(constraints.getNotNullConstraints());
+        LinkedHashMap<String,Object> defaultValues = new LinkedHashMap<>(constraints.getDefaultValues());
+        List<List<String>> uniqueConstraints = new ArrayList<>(constraints.getUniqueConstraints());
+        List<ForeignKeyConstraint> foreignKeyConstraints = new ArrayList<>(constraints.getForeignKeyConstraints());
+        // Contrainte PRIMARY KEY
+        if(rowDoublon(rowValues, new ArrayList<>(constraints.getPrimaryKeyColumns()))){
             throw new IllegalArgumentException
             ("Table "+name
             +" : Le tuple que vous souhaitez rajouter partage les mêmes valeurs de clef primaire d'un autre tuple existant");
         }
-        
-        if (rowValues.size() != columns.size()){
+        if (rowValues.size()>columns.size()){
             throw new FormatException
-            ("Table "+name+" : Le nombre de valeur ne correspond pas au nombre de colonnes.");
+            ("Table "+name+" : Le nombre de couples colonne-valeur doit-être inférieur ou égal au nombre de colonnes.");
         }
-
-        List<Class<?>> columnTypes = new ArrayList<>(columns.values());
-        for(int i = 0;i<columnTypes.size();i++){
-            Object value = rowValues.get(i);
-            Class<?> type = columnTypes.get(i);
+        List<String> emptyValues = new ArrayList<>(getColumns());
+        for(int i = 0; i<columnValues.size();i++){
+            String columnName = columnValues.get(i).getLeft();
+            Object value = columnValues.get(i).getRight();
+            //verification du type en premier
+            int index = getColumnIndex(columnName);
+            Class<?> type = columnTypes.get(index);
             if(!value.getClass().equals(type)){
                 throw new FormatException
                 ("Table "+name+" : L'objet "+value+" est de type "
                 +value.getClass()+" alors que le type "
-                +type+ " était attendu à la "+i+"ème colonne");
+                +type+ " était attendu à la colonne "+columnName);
+            }
+            // contrainte NOT NULL
+            if(notNull.contains(columnName) && value.equals(null)){
+                throw new FormatException
+                ("Table "+name+" : L'objet "+value+" ne doit pas être null.");
+            }
+            
+            //Contrainte DEFAULT
+            if(value.toString().isEmpty()){
+                columnValues.get(i).setRight(defaultValues.get(columnName));
+            }
+            emptyValues.remove(columnName);
+            // Contrainte FOREIGN KEY
+            for(ForeignKeyConstraint foreignKeyConstraint : foreignKeyConstraints){
+                if(foreignKeyConstraint.getReferencingColumn().equals(columnName)){
+                    Table foreignTable = dBase.getTable(foreignKeyConstraint.getReferencedTableName());
+                    if(!foreignTable.columnContainsValue(value,foreignKeyConstraint.getReferencedColumn())){
+                        throw new FormatException
+                        ("Table "+name+" : L'objet "+value+" n'existe pas dans la table "+foreignTable.getName());
+                    }
+                }
+
             }
         }
+        // Contrainte UNIQUE
+        for(List<String> uniqueConstraint : uniqueConstraints){
+            if(rowDoublon(rowValues, uniqueConstraint)){
+                throw new IllegalArgumentException
+                ("Table "+name
+                +" : Le tuple que vous souhaitez rajouter partage les mêmes valeurs de clef primaire d'un autre tuple existant");
+            }
+        }
+
+        // Contrainte CHECK
+        if(!evaluateBeforeAdding(columnValues)){
+            throw new IllegalArgumentException
+            ("Table "+name
+            +" : Le tuple que vous souhaitez rajouter ne respecte pas une contrainte CHECK");
+        }
         this.rows.add(new ArrayList<>(rowValues));
+    }
+
+    private boolean evaluateBeforeAdding(List<MutablePair<String,Object>> columnValues) throws EvaluationException {
+        for(CheckConstraint checkConstraint: constraints.getCheckConstraints()){
+            if(!checkConstraint.evaluateExpression(columnValues)){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean columnContainsValue(Object value, String columnName){
+        int index = getColumnIndex(columnName);
+        for(List<Object>row :rows){
+            if(row.get(index).equals(value)){
+                return true;
+            }
+        }
+        return false;
     }
 
     // prend en argument une liste de paires: à gauche le nom de la colonne,

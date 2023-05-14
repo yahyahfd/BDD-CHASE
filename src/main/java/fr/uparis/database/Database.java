@@ -13,11 +13,11 @@ public class Database {
         this.dbName = dbName;
     }
 
-    public void createTable(String tableName, Table table){
-        if(tables.containsKey(tableName))
+    public void createTable(Table table){
+        if(tables.containsKey(table.getName()))
             throw new IllegalArgumentException("Database "+dbName
-            +" : La table "+tableName+ "existe déjà.");
-        tables.put(tableName, table);
+            +" : La table "+table.getName()+ "existe déjà.");
+        tables.put(table.getName(), table);
     }
 
     public Table dropTable(String tableName){

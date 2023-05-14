@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import fr.uparis.exceptions.FormatException;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -13,19 +12,28 @@ public class Table {
     // Nom de la table
     private String name;
     // à chaque nom de colonne, on associe un type
-    private Map<String, Class<?>> columns;
+    private LinkedHashMap<String, Class<?>> columns = new LinkedHashMap<>();
 
     // Liste de rows, on pourra filter la liste comme on veut sur n'importe quels attributs
-    private List<List<Object>> rows;
+    private List<List<Object>> rows = new ArrayList<>();
 
     // indexes des colonnes de la clef primaire : les colonnes qui constituent la clef
-    private final List<Integer> primaryKeyIndexes;
-    private final List<String> primaryKey;
+    private List<Integer> primaryKeyIndexes;
+    private List<String> primaryKey;
 
-    public Table(String name, Map<String, Class<?>> columns, List<String> primaryKey) {
+    public Table(String name) {
         this.name = name;
-        this.columns = new LinkedHashMap<>(columns);
-        this.rows = new ArrayList<>();
+    }
+
+    public void addColumn(String nomColonne, Class<?> typeColonne){
+        if(columns.containsKey(nomColonne)){
+            throw new IllegalArgumentException
+            ("Table "+name+" : La colonne "+nomColonne+" existe déjà.");
+        }
+        this.columns.put(nomColonne,typeColonne);
+    }
+
+    public void setPrimaryKey(List<String> primaryKey){
         if(!(primaryKey.size()<= columns.size()) 
         || !(columns.keySet().containsAll(primaryKey))){
             throw new IllegalArgumentException
@@ -96,7 +104,7 @@ public class Table {
         for(List<Object> row :rows){
             boolean doublon = true;
             for(int i : primaryKeyIndexes){
-                if(rowValues.get(i).equals(row.get(i))){// c'est bon, on passe au row suivant
+                if(!rowValues.get(i).equals(row.get(i))){// c'est bon, on passe au row suivant
                     doublon = false;
                     break;
                 }
@@ -138,14 +146,16 @@ public class Table {
     // à droite la valeur qui nous interesse
     // retourne la liste des rows qui correspondent à nos critères dans le select
     // cette méthode correspond au select
-    public List<List<Object>> selectFromTable(List<Pair<String,String>> values){
+    public List<List<Object>> selectFromTable(List<Pair<String,?>> values){
         ArrayList<List<Object>> result = new ArrayList<>(rows);
         Iterator<List<Object>> iterator = result.iterator();
         while(iterator.hasNext()){
             List<Object> row = iterator.next();
-            for(Pair<String,String> pair : values){
+            for(Pair<String,?> pair : values){
                 int columnIndex = getColumnIndex(pair.getLeft());
-                if(!pair.getRight().equals(row.get(columnIndex))){
+                Object expectedValue = pair.getRight();
+                Object actualValue = row.get(columnIndex);
+                if (!expectedValue.equals(actualValue)) {
                     iterator.remove();
                     break;
                 }

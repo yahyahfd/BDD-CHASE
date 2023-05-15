@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import fr.uparis.exceptions.FormatException;
+
 public class Database {
 
     private final String dbName;
@@ -13,26 +15,30 @@ public class Database {
         this.dbName = dbName;
     }
 
-    public void createTable(Table table){
+    public List<Table> getTables(){
+        return new ArrayList<>(tables.values());
+    }
+
+    public void createTable(Table table) throws FormatException{
         if(tables.containsKey(table.getName()))
-            throw new IllegalArgumentException("Database "+dbName
+            throw new FormatException("Database "+dbName
             +" : La table "+table.getName()+ "existe déjà.");
         tables.put(table.getName(), table);
     }
 
-    public Table dropTable(String tableName){
+    public Table dropTable(String tableName) throws FormatException{
         Table result = tables.remove(tableName);
         if(result == null){
-            throw new IllegalArgumentException("Database "+dbName
+            throw new FormatException("Database "+dbName
             +" : La table "+tableName+ "n'existe pas.");
         }
         return result;
     }
 
-    public Table getTable(String tableName){
+    public Table getTable(String tableName) throws FormatException{
         Table result = tables.get(tableName);
         if(result == null){
-            throw new IllegalArgumentException("Database "+dbName
+            throw new FormatException("Database "+dbName
             +" : La table "+tableName+ "n'existe pas.");
         }
         return result;
@@ -49,4 +55,8 @@ public class Database {
     // méthode pour charger bd à partir d'un fichier
     // méthode de jointure tri, filtrage etc
     // c'est ici qu'on aura le chase etc
+
+    public boolean satisfiesConstraints() {
+        return false;
+    }
 }

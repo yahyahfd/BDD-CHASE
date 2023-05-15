@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.tuple.MutablePair;
 
+import fr.uparis.exceptions.FormatException;
 import net.sourceforge.jeval.EvaluationException;
 import net.sourceforge.jeval.Evaluator;
 
@@ -21,14 +22,14 @@ public class CheckConstraint {
     private final String expression;
     private final Evaluator evaluator;
 
-    public CheckConstraint(String expression){
+    public CheckConstraint(String expression) throws FormatException{
         try {
             evaluator = new Evaluator();
             evaluator.parse(expression);
             this.expression = expression;
         } catch (EvaluationException e) {
-            throw new IllegalArgumentException
-            ("L'expression "+expression+" est invalide !",e);
+            throw new FormatException
+            ("L'expression "+expression+" est invalide !");
         }
     }
 

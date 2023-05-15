@@ -7,10 +7,11 @@ import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import fr.uparis.database.*;
+import fr.uparis.exceptions.FormatException;
 
 public class App 
 {
-    public static void main( String[] args )
+    public static void main( String[] args ) throws FormatException
     {
         System.out.println( "Starting the program..." );
         Database myDb = new Database("myDB");

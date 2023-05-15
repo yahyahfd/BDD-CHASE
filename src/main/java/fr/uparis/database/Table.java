@@ -54,10 +54,10 @@ public class Table {
         }
     }
 
-    public void setPrimaryKeyColumns(List<String> pKColumns){
+    public void setPrimaryKeyColumns(List<String> pKColumns) throws FormatException{
         if(!(pKColumns.size()<= columns.size()) 
         || !(columns.keySet().containsAll(pKColumns))){
-            throw new IllegalArgumentException
+            throw new FormatException
             ("Table "+name+" : Une clef primaire doit-être une partie de (ou toute) la liste d'attributs");
         }
         ArrayList<Integer> pkIndexes = new ArrayList<>();
@@ -70,18 +70,18 @@ public class Table {
     }
 
     // On rajoute une liste de contrainte : une seule foreignKey à la fois
-    public void addForeignKeyConstraints(List<ForeignKeyConstraint> foreignKeyConstraints, Database dBase){
+    public void addForeignKeyConstraints(List<ForeignKeyConstraint> foreignKeyConstraints, Database dBase) throws FormatException{
         List<String> referencedColumns = new ArrayList<>();
         String referencedTableName = "";
         for(ForeignKeyConstraint foreignKeyConstraint: foreignKeyConstraints){
             if(!dBase.tableExists(foreignKeyConstraint.getReferencedTableName())){
-                throw new IllegalArgumentException
+                throw new FormatException
                 ("Table "+name+" : Une clef étrangère doit référencer une table existante.");
             }
             if(referencedTableName.isEmpty())
                 referencedTableName = foreignKeyConstraint.getReferencedTableName();
             if(!referencedTableName.equals(foreignKeyConstraint.getReferencedTableName()))
-                throw new IllegalArgumentException
+                throw new FormatException
                 ("Table "+name+" : Vous essayez de rajouter une contrainte sur différentes tables pour un même attribut.");
                 
             referencedColumns.add(foreignKeyConstraint.getReferencedColumn());
@@ -101,14 +101,14 @@ public class Table {
             }
         }
         if(notFound){
-            throw new IllegalArgumentException
+            throw new FormatException
                 ("Table "+name+" : Une clef étrangère doit être une clef unique ou une clef primaire.");
         }
     }
 
-    public void addColumn(String nomColonne, Class<?> typeColonne){
+    public void addColumn(String nomColonne, Class<?> typeColonne) throws FormatException{
         if(columns.containsKey(nomColonne)){
-            throw new IllegalArgumentException
+            throw new FormatException
             ("Table "+name+" : La colonne "+nomColonne+" existe déjà.");
         }
         this.columns.put(nomColonne,typeColonne);
@@ -127,16 +127,16 @@ public class Table {
         return rows.remove(rowToDelete);
     }
 
-    public void deleteRows(List<List<Object>> rowsToDelete){
+    public void deleteRows(List<List<Object>> rowsToDelete) throws FormatException{
         for(List<Object> rowToDelete : rowsToDelete){
             if(!deleteRow(rowToDelete)){
-                throw new IllegalArgumentException
+                throw new FormatException
                     ("Table "+name+" : Vous essatez de supprimer un tuple qui n'existe pas.");
             }
         }
     }
 
-    private int getColumnIndex(String columnName){
+    public int getColumnIndex(String columnName) throws FormatException{
         int index = 0;
         for(String column : columns.keySet()){
             if(column.equals(columnName)){
@@ -144,7 +144,7 @@ public class Table {
             }
             index++;
         }
-        throw new IllegalArgumentException
+        throw new FormatException
             ("Table "+name+" : La colonne "+columnName+" n'existe pas.");
     }
 
@@ -164,7 +164,7 @@ public class Table {
     }
     
     // renvoie true si 100% similaire, false sinon
-    private boolean rowDoublon(List<Object> rowValues, List<String> columnNames){
+    private boolean rowDoublon(List<Object> rowValues, List<String> columnNames) throws FormatException{
         for(List<Object> row :rows){
             boolean doublon = true;
             for(String columnName: columnNames){
@@ -194,7 +194,7 @@ public class Table {
         List<ForeignKeyConstraint> foreignKeyConstraints = new ArrayList<>(constraints.getForeignKeyConstraints());
         // Contrainte PRIMARY KEY
         if(rowDoublon(rowValues, new ArrayList<>(constraints.getPrimaryKeyColumns()))){
-            throw new IllegalArgumentException
+            throw new FormatException
             ("Table "+name
             +" : Le tuple que vous souhaitez rajouter partage les mêmes valeurs de clef primaire d'un autre tuple existant");
         }
@@ -245,7 +245,7 @@ public class Table {
         // Contrainte UNIQUE
         for(List<String> uniqueConstraint : uniqueConstraints){
             if(rowDoublon(rowValues, uniqueConstraint)){
-                throw new IllegalArgumentException
+                throw new FormatException
                 ("Table "+name
                 +" : Le tuple que vous souhaitez rajouter partage les mêmes valeurs de clef primaire d'un autre tuple existant");
             }
@@ -253,7 +253,7 @@ public class Table {
 
         // Contrainte CHECK
         if(!evaluateBeforeAdding(columnValues)){
-            throw new IllegalArgumentException
+            throw new FormatException
             ("Table "+name
             +" : Le tuple que vous souhaitez rajouter ne respecte pas une contrainte CHECK");
         }
@@ -269,7 +269,7 @@ public class Table {
         return true;
     }
 
-    private boolean columnContainsValue(Object value, String columnName){
+    private boolean columnContainsValue(Object value, String columnName) throws FormatException{
         int index = getColumnIndex(columnName);
         for(List<Object>row :rows){
             if(row.get(index).equals(value)){
@@ -283,7 +283,7 @@ public class Table {
     // à droite la valeur qui nous interesse
     // retourne la liste des rows qui correspondent à nos critères dans le select
     // cette méthode correspond au select
-    public List<List<Object>> selectFromTable(List<Pair<String,?>> values){
+    public List<List<Object>> selectFromTable(List<Pair<String,?>> values) throws FormatException{
         ArrayList<List<Object>> result = new ArrayList<>(rows);
         Iterator<List<Object>> iterator = result.iterator();
         while(iterator.hasNext()){

@@ -1,6 +1,7 @@
 package fr.uparis.database;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -181,6 +182,7 @@ public class Table {
     // rajoute un tuple à notre table s'il ne partage pas les mêmes clefs primaires
     // qu'un tuple existant, etc...
     public void addRow(List<MutablePair<String,Object>> columnValues, Database dBase) throws FormatException, EvaluationException {
+        List<Object> resultValues = new ArrayList<>(Collections.nCopies(columns.size(), null));
         List<Object> rowValues = new ArrayList<>();
         for(Pair<String,Object> pair : columnValues){
             rowValues.add(pair.getRight());
@@ -213,16 +215,6 @@ public class Table {
                 +value.getClass()+" alors que le type "
                 +type+ " était attendu à la colonne "+columnName);
             }
-            // contrainte NOT NULL
-            if(notNull.contains(columnName) && value.equals(null)){
-                throw new FormatException
-                ("Table "+name+" : L'objet "+value+" ne doit pas être null.");
-            }
-            
-            //Contrainte DEFAULT
-            if(value.toString().isEmpty()){
-                columnValues.get(i).setRight(defaultValues.get(columnName));
-            }
             emptyValues.remove(columnName);
             // Contrainte FOREIGN KEY
             for(ForeignKeyConstraint foreignKeyConstraint : foreignKeyConstraints){
@@ -233,7 +225,21 @@ public class Table {
                         ("Table "+name+" : L'objet "+value+" n'existe pas dans la table "+foreignTable.getName());
                     }
                 }
+            }
+            resultValues.set(index, value);
+        }
 
+        for(int i = 0; i<resultValues.size();i++){
+            if(resultValues.get(i) == null){
+                String columnName = getColumns().get(i);
+                //Contrainte DEFAULT
+                resultValues.set(i,defaultValues.get(columnName));
+
+                // contrainte NOT NULL
+                if(notNull.contains(columnName)){
+                    throw new FormatException
+                    ("Table "+name+" : "+columnName+" ne doit pas être null.");
+                }
             }
         }
         // Contrainte UNIQUE
@@ -251,7 +257,7 @@ public class Table {
             ("Table "+name
             +" : Le tuple que vous souhaitez rajouter ne respecte pas une contrainte CHECK");
         }
-        this.rows.add(new ArrayList<>(rowValues));
+        this.rows.add(new ArrayList<>(resultValues));
     }
 
     private boolean evaluateBeforeAdding(List<MutablePair<String,Object>> columnValues) throws EvaluationException {

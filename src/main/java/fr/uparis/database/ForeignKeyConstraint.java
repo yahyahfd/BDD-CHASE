@@ -5,15 +5,15 @@ public class ForeignKeyConstraint {
      * Externe
      */
     private final String referencedColumn;
-    private final String referencedTableName;
+    private final Table referencedTable;
     /**
      * Interne
      */
     private final String referencingColumn;
 
-    public ForeignKeyConstraint(String referencedColumn, String referencedTableName, String referencingColumn) {
+    public ForeignKeyConstraint(String referencedColumn, Table referencedTable, String referencingColumn) {
         this.referencedColumn = referencedColumn;
-        this.referencedTableName = referencedTableName;
+        this.referencedTable = referencedTable;
         this.referencingColumn = referencingColumn;
     }
     
@@ -33,7 +33,7 @@ public class ForeignKeyConstraint {
         return referencingColumn;
     }
 
-    public String getReferencedTableName() {
-        return referencedTableName;
+    public Table getReferencedTable() {
+        return referencedTable;
     }
 }

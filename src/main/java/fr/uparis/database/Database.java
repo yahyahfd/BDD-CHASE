@@ -1,42 +1,71 @@
 package fr.uparis.database;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import fr.uparis.algorithms.EGD;
 import fr.uparis.exceptions.FormatException;
+import net.sourceforge.jeval.EvaluationException;
+import net.sourceforge.jeval.Evaluator;
 
 public class Database {
+    private final EGD egd = new EGD();
+    public EGD getEgd() {
+        return egd;
+    }
 
     private final String dbName;
-    private final HashMap<String,Table> tables = new HashMap<>();
+    private final Set<Table> tables = new HashSet<>();
+    public static final Evaluator evaluator = new Evaluator();
 
+    public static boolean evaluateExpression(String expression) throws EvaluationException  {
+        String result = evaluator.evaluate(expression);
+        return evaluator.getBooleanResult(result);
+    }
+    
+    public static boolean isValidExpression(String expression){
+        try {
+            Database.evaluator.parse(expression);
+        } catch (EvaluationException e) {
+            return false;
+        }
+
+        return true;
+    }
+    
     public Database(String dbName){
         this.dbName = dbName;
     }
 
     public List<Table> getTables(){
-        return new ArrayList<>(tables.values());
+        return new ArrayList<>(tables);
     }
 
     public void createTable(Table table) throws FormatException{
-        if(tables.containsKey(table.getName()))
+        if(tableExists(table))
             throw new FormatException("Database "+dbName
             +" : La table "+table.getName()+ "existe déjà.");
-        tables.put(table.getName(), table);
+        tables.add(table);
     }
 
-    public Table dropTable(String tableName) throws FormatException{
-        Table result = tables.remove(tableName);
-        if(result == null){
+    public Table dropTable(Table table) throws FormatException{
+        if(!tables.remove(table)){
             throw new FormatException("Database "+dbName
-            +" : La table "+tableName+ "n'existe pas.");
+            +" : La table "+table.getName()+ "n'existe pas.");
         }
-        return result;
+        return table;
     }
 
     public Table getTable(String tableName) throws FormatException{
-        Table result = tables.get(tableName);
+        Table result = null;
+        for(Table table: tables){
+            if(table.getName().equals(tableName)){
+                result = table;
+                break;
+            }
+        }
         if(result == null){
             throw new FormatException("Database "+dbName
             +" : La table "+tableName+ "n'existe pas.");
@@ -45,18 +74,23 @@ public class Database {
     }
 
     public List<String> getTableNames(){
-        return new ArrayList<String>(tables.keySet());
+        List<String> tableNames = new ArrayList<>();
+        for(Table table: tables){
+            tableNames.add(table.getName());
+        }
+        return tableNames;
     }
 
-    public boolean tableExists(String tableName){
-        return tables.containsKey(tableName);
+    public boolean tableExists(Table table){
+        return tables.contains(table);
     }
+
     // méthode pour sauvegarder bd dans un fichier
     // méthode pour charger bd à partir d'un fichier
     // méthode de jointure tri, filtrage etc
     // c'est ici qu'on aura le chase etc
 
-    public boolean satisfiesConstraints() {
-        return false;
-    }
+    // public boolean satisfiesConstraints() {
+    //     return false;
+    // }
 }

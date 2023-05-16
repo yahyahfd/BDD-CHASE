@@ -6,6 +6,7 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
+import fr.uparis.algorithms.EqualityAtom;
 import fr.uparis.database.*;
 import fr.uparis.exceptions.FormatException;
 
@@ -13,8 +14,9 @@ public class App
 {
     public static void main( String[] args ) throws FormatException
     {
-        System.out.println( "Starting the program..." );
+        System.out.println( "Starting the program..." );        
         Database myDb = new Database("myDB");
+        // Ajout des tables
         Table etudiants = new Table("Etudiants");
         myDb.createTable(etudiants);
         etudiants.addColumn("NumEtudiant",Integer.class);
@@ -28,7 +30,13 @@ public class App
         List<String> primaryKeys = new ArrayList<>();
         primaryKeys.add("NumEtudiant");
         etudiants.setPrimaryKeyColumns(primaryKeys);
+        // ajout des EGD
+        myDb.getEgd().addRelationalAtomLeft(etudiants, null, myDb);
+        EqualityAtom eAtomA = new EqualityAtom("NomMaster", etudiants, false);
+        EqualityAtom eAtomB = new EqualityAtom("IMPAIR", etudiants, true);
+        myDb.getEgd().addEqualityAtomLeft(Pair.of(eAtomA,eAtomB));
 
+        // ajout des tuples
         List<MutablePair<String, Object>> etudiant1 = new ArrayList<>();
         MutablePair<String,Object> numEtudiant1 = MutablePair.of("NumEtudiant",(Object)71800578);
         MutablePair<String,Object> nomEtudiant1 = MutablePair.of("Nom",(Object)"Hafid");
@@ -60,6 +68,7 @@ public class App
             for(List<Object> row: result){
                 System.out.println(row);
             }
+            // System.out.println(Database.evaluator.getVariables());
         } catch (Exception e) {
             e.printStackTrace();
         }

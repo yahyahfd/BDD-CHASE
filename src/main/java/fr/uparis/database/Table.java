@@ -28,6 +28,7 @@ public class Table {
 
     public Table(String name) {
         this.name = name;
+        Database.evaluator.putVariable("Table_"+name,name);
     }
 
     public void addNotNullConstraints(List<String> columnNames){
@@ -72,15 +73,15 @@ public class Table {
     // On rajoute une liste de contrainte : une seule foreignKey à la fois
     public void addForeignKeyConstraints(List<ForeignKeyConstraint> foreignKeyConstraints, Database dBase) throws FormatException{
         List<String> referencedColumns = new ArrayList<>();
-        String referencedTableName = "";
+        Table referencedTable = null;
         for(ForeignKeyConstraint foreignKeyConstraint: foreignKeyConstraints){
-            if(!dBase.tableExists(foreignKeyConstraint.getReferencedTableName())){
+            if(!dBase.tableExists(foreignKeyConstraint.getReferencedTable())){
                 throw new FormatException
                 ("Table "+name+" : Une clef étrangère doit référencer une table existante.");
             }
-            if(referencedTableName.isEmpty())
-                referencedTableName = foreignKeyConstraint.getReferencedTableName();
-            if(!referencedTableName.equals(foreignKeyConstraint.getReferencedTableName()))
+            if(referencedTable == null)
+                referencedTable = foreignKeyConstraint.getReferencedTable();
+            if(!referencedTable.equals(foreignKeyConstraint.getReferencedTable()))
                 throw new FormatException
                 ("Table "+name+" : Vous essayez de rajouter une contrainte sur différentes tables pour un même attribut.");
                 
@@ -219,7 +220,7 @@ public class Table {
             // Contrainte FOREIGN KEY
             for(ForeignKeyConstraint foreignKeyConstraint : foreignKeyConstraints){
                 if(foreignKeyConstraint.getReferencingColumn().equals(columnName)){
-                    Table foreignTable = dBase.getTable(foreignKeyConstraint.getReferencedTableName());
+                    Table foreignTable = foreignKeyConstraint.getReferencedTable();
                     if(!foreignTable.columnContainsValue(value,foreignKeyConstraint.getReferencedColumn())){
                         throw new FormatException
                         ("Table "+name+" : L'objet "+value+" n'existe pas dans la table "+foreignTable.getName());
@@ -252,17 +253,23 @@ public class Table {
         }
 
         // Contrainte CHECK
-        if(!evaluateBeforeAdding(columnValues)){
+        if(!evaluateBeforeAdding()){
             throw new FormatException
             ("Table "+name
             +" : Le tuple que vous souhaitez rajouter ne respecte pas une contrainte CHECK");
         }
         this.rows.add(new ArrayList<>(resultValues));
+        System.out.println("EGD: "+dBase.getEgd().isSatisfied());
+        for(int i=0;i<resultValues.size();i++){
+            // TableName.indiceRow.colonne : valeur
+            Database.evaluator.putVariable(name+"."+(rows.size()-1)+"."+getColumns().get(i), resultValues.get(i).toString());
+        }
+
     }
 
-    private boolean evaluateBeforeAdding(List<MutablePair<String,Object>> columnValues) throws EvaluationException {
+    private boolean evaluateBeforeAdding() throws EvaluationException {
         for(CheckConstraint checkConstraint: constraints.getCheckConstraints()){
-            if(!checkConstraint.evaluateExpression(columnValues)){
+            if(!Database.evaluateExpression(checkConstraint.getExpression())){
                 return false;
             }
         }

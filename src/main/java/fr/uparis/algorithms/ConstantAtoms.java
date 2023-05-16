@@ -6,7 +6,7 @@ import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class ConstantAtoms {
-    private Set<Pair<String, Object>> constantes;
+    private Set<Pair<String, Object>> constantes = new HashSet<>();
 
     public Set<Pair<String, Object>> getConstantes() {
         return new HashSet<>(constantes);

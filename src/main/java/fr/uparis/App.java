@@ -6,8 +6,10 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
+import fr.uparis.algorithms.ConstantAtoms;
 import fr.uparis.algorithms.EGD;
 import fr.uparis.algorithms.EqualityAtom;
+import fr.uparis.algorithms.TGD;
 import fr.uparis.database.*;
 import fr.uparis.exceptions.FormatException;
 
@@ -18,6 +20,13 @@ public class App
         System.out.println( "Starting the program..." );        
         Database myDb = new Database("myDB");
         // Ajout des tables
+        Table masters = new Table("Masters");
+        myDb.createTable(masters);
+        masters.addColumn("ID",Integer.class);
+        masters.addColumn("NomMaster",String.class);
+        List<String> primaryKeysMaster = new ArrayList<>();
+        primaryKeysMaster.add("ID");
+        masters.setPrimaryKeyColumns(primaryKeysMaster);
         Table etudiants = new Table("Etudiants");
         myDb.createTable(etudiants);
         etudiants.addColumn("NumEtudiant",Integer.class);
@@ -41,6 +50,15 @@ public class App
         firstEGD.addEqualityAtomLeft(Pair.of(eAtomA,eAtomB));
         myDb.addEGD(firstEGD);
 
+        // ajout des TGD
+        TGD firstTGD = new TGD();
+        ConstantAtoms cAtom = new ConstantAtoms();
+        cAtom.addConstante(Pair.of("NomMaster","IMPAIR"));
+        firstTGD.addRelationalAtomLeft(etudiants, cAtom, myDb);
+        firstTGD.addRelationalAtomRight(masters, cAtom, myDb);
+        firstTGD.addCommonValue("NomMaster");
+        myDb.addTGD(firstTGD);
+
         // ajout des tuples
         List<MutablePair<String, Object>> etudiant1 = new ArrayList<>();
         MutablePair<String,Object> numEtudiant1 = MutablePair.of("NumEtudiant",(Object)71800578);
@@ -57,10 +75,19 @@ public class App
         etudiant2.add(nomEtudiant2);
         etudiant2.add(prenomEtudiant2);
 
+        List<MutablePair<String, Object>> master1 = new ArrayList<>();
+        MutablePair<String,Object> idMaster1 = MutablePair.of("ID",(Object)0);
+        MutablePair<String,Object> nomMaster1 = MutablePair.of("NomMaster",(Object)"IMPAIR");
+        master1.add(idMaster1);
+        master1.add(nomMaster1);
+
+
         try {
             etudiants.addRow(etudiant1,myDb);
             etudiants.addRow(etudiant2,myDb);
             System.out.println("Les étudiants ont été rajoutés avec succès !");
+            masters.addRow(master1, myDb);
+            System.out.println("Les masters ont été rajoutés avec succès !");
 
             // test du select
             List<Pair<String,?>> conditions = new ArrayList<>();
@@ -73,11 +100,14 @@ public class App
             for(List<Object> row: result){
                 System.out.println(row);
             }
-            // System.out.println(Database.evaluator.getVariables());
+            System.out.println(Database.evaluator.getVariables());
 
-            for(int i = 0; i <myDb.getEgd().size();i++){
-                System.out.println("LeftEGD_"+i+" :"+myDb.getEgd().get(i).isSatisfied(true));
-                System.out.println("RightEGD_"+i+" :"+myDb.getEgd().get(i).isSatisfied(false));
+            for(int i = 0; i <myDb.getEGD().size();i++){
+                System.out.println("LeftEGD_"+i+" :"+myDb.getEGD().get(i).isSatisfied(true));
+                System.out.println("RightEGD_"+i+" :"+myDb.getEGD().get(i).isSatisfied(false));
+            }
+            for(int i = 0; i <myDb.getTGD().size();i++){
+                System.out.println("TGD_"+i+" :"+myDb.getTGD().get(i).isSatisfied());
             }
         } catch (Exception e) {
             e.printStackTrace();

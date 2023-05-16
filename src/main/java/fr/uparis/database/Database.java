@@ -6,18 +6,28 @@ import java.util.List;
 import java.util.Set;
 
 import fr.uparis.algorithms.EGD;
+import fr.uparis.algorithms.TGD;
 import fr.uparis.exceptions.FormatException;
 import net.sourceforge.jeval.EvaluationException;
 import net.sourceforge.jeval.Evaluator;
 
 public class Database {
     private final List<EGD> egdList = new ArrayList<>();
-    public List<EGD> getEgd() {
+    private final List<TGD> tgdList = new ArrayList<>();
+    public List<TGD> getTGD() {
+        return tgdList;
+    }
+
+    public List<EGD> getEGD() {
         return new ArrayList<>(egdList);
     }
 
     public void addEGD(EGD egd){
         egdList.add(egd);
+    }
+
+    public void addTGD(TGD tgd){
+        tgdList.add(tgd);
     }
 
     private final String dbName;

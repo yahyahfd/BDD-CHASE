@@ -259,7 +259,9 @@ public class Table {
             +" : Le tuple que vous souhaitez rajouter ne respecte pas une contrainte CHECK");
         }
         this.rows.add(new ArrayList<>(resultValues));
-        System.out.println("EGD: "+dBase.getEgd().isSatisfied());
+        for(int i = 0; i <dBase.getEgd().size();i++){
+            System.out.println("EGD_"+i+" :"+dBase.getEgd().get(i).isSatisfied());
+        }
         for(int i=0;i<resultValues.size();i++){
             // TableName.indiceRow.colonne : valeur
             Database.evaluator.putVariable(name+"."+(rows.size()-1)+"."+getColumns().get(i), resultValues.get(i).toString());

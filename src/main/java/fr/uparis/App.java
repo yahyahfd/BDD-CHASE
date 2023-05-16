@@ -6,6 +6,7 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
+import fr.uparis.algorithms.EGD;
 import fr.uparis.algorithms.EqualityAtom;
 import fr.uparis.database.*;
 import fr.uparis.exceptions.FormatException;
@@ -31,10 +32,12 @@ public class App
         primaryKeys.add("NumEtudiant");
         etudiants.setPrimaryKeyColumns(primaryKeys);
         // ajout des EGD
-        myDb.getEgd().addRelationalAtomLeft(etudiants, null, myDb);
+        EGD firstEGD = new EGD();
+        firstEGD.addRelationalAtomLeft(etudiants, null, myDb);
         EqualityAtom eAtomA = new EqualityAtom("NomMaster", etudiants, false);
         EqualityAtom eAtomB = new EqualityAtom("IMPAIR", etudiants, true);
-        myDb.getEgd().addEqualityAtomLeft(Pair.of(eAtomA,eAtomB));
+        firstEGD.addEqualityAtomRight(Pair.of(eAtomA,eAtomB));
+        myDb.addEGD(firstEGD);
 
         // ajout des tuples
         List<MutablePair<String, Object>> etudiant1 = new ArrayList<>();

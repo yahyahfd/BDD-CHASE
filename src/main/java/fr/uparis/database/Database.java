@@ -11,9 +11,13 @@ import net.sourceforge.jeval.EvaluationException;
 import net.sourceforge.jeval.Evaluator;
 
 public class Database {
-    private final EGD egd = new EGD();
-    public EGD getEgd() {
-        return egd;
+    private final List<EGD> egdList = new ArrayList<>();
+    public List<EGD> getEgd() {
+        return new ArrayList<>(egdList);
+    }
+
+    public void addEGD(EGD egd){
+        egdList.add(egd);
     }
 
     private final String dbName;

@@ -22,6 +22,14 @@ public class EGD {
 
     private final Set<Pair<EqualityAtom,EqualityAtom>> equalityAtomsRight = new HashSet<>();
 
+    public Set<Pair<EqualityAtom,EqualityAtom>> getEqualityAtomsRight(){
+        return equalityAtomsRight;
+    }
+
+    public Set<Pair<EqualityAtom,EqualityAtom>> getEqualityAtomsLeft(){
+        return equalityAtomsLeft;
+    }
+    
     // vérifier que la table existe dans DB? comment? mettre db en parametre?
     public void addRelationalAtomLeft(Table relationalAtom, ConstantAtoms constants,Database dBase) throws FormatException{
         if(!dBase.tableExists(relationalAtom))
@@ -38,7 +46,8 @@ public class EGD {
         equalityAtomsRight.add(equalityAtom);
     }
 
-    public boolean isSatisfied() throws FormatException{
+    // Si true, on prend le left, si false, on prend le right
+    public boolean isSatisfied(boolean leftRight) throws FormatException{
         // liste des tuples qui nous interessent dans chaque table.
         Set<Pair<Table,List<List<Object>>>> filteredTables = new HashSet<>();
         // On associe à chaque table présente, la nouvelle liste de tuples après filtre
@@ -57,7 +66,11 @@ public class EGD {
         // Premier qui vérifie pas -> on renvoie false
         // fin de boucle, on renvoie true -> tous les atomes sont valides
         // Set<Pair<EqualityAtom, EqualityAtom>> equalityAtomsLeft
-        for(Pair<EqualityAtom,EqualityAtom> equalityAtomLeft: equalityAtomsLeft){
+
+        Set<Pair<EqualityAtom,EqualityAtom>> equalityAtoms;
+        equalityAtoms= leftRight?equalityAtomsLeft:equalityAtomsRight;
+        
+        for(Pair<EqualityAtom,EqualityAtom> equalityAtomLeft: equalityAtoms){
             // On selectionne la table qui nous interessent dans les relations:
             Table leftEqualityTable = equalityAtomLeft.getLeft().table();
             String leftAttribute = equalityAtomLeft.getLeft().attribute();

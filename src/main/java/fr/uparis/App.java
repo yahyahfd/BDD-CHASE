@@ -35,8 +35,10 @@ public class App
         EGD firstEGD = new EGD();
         firstEGD.addRelationalAtomLeft(etudiants, null, myDb);
         EqualityAtom eAtomA = new EqualityAtom("NomMaster", etudiants, false);
-        EqualityAtom eAtomB = new EqualityAtom("IMPAIR", etudiants, true);
-        firstEGD.addEqualityAtomRight(Pair.of(eAtomA,eAtomB));
+        EqualityAtom eAtomB = new EqualityAtom("IMPAR", etudiants, true);
+        EqualityAtom eAtomC = new EqualityAtom("IMPAIR", etudiants, true);
+        firstEGD.addEqualityAtomRight(Pair.of(eAtomA,eAtomC));
+        firstEGD.addEqualityAtomLeft(Pair.of(eAtomA,eAtomB));
         myDb.addEGD(firstEGD);
 
         // ajout des tuples
@@ -72,6 +74,11 @@ public class App
                 System.out.println(row);
             }
             // System.out.println(Database.evaluator.getVariables());
+
+            for(int i = 0; i <myDb.getEgd().size();i++){
+                System.out.println("LeftEGD_"+i+" :"+myDb.getEgd().get(i).isSatisfied(true));
+                System.out.println("RightEGD_"+i+" :"+myDb.getEgd().get(i).isSatisfied(false));
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

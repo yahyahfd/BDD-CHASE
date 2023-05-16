@@ -1,4 +1,4 @@
-package fr.uparis.database;
+package fr.uparis.constraints.tables;
 
 import java.util.ArrayList;
 import java.util.HashMap;

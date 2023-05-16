@@ -5,29 +5,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import fr.uparis.algorithms.EGD;
-import fr.uparis.algorithms.TGD;
+import fr.uparis.constraints.database.GenerationDependencies;
 import fr.uparis.exceptions.FormatException;
 import net.sourceforge.jeval.EvaluationException;
 import net.sourceforge.jeval.Evaluator;
 
 public class Database {
-    private final List<EGD> egdList = new ArrayList<>();
-    private final List<TGD> tgdList = new ArrayList<>();
-    public List<TGD> getTGD() {
-        return tgdList;
+    private final List<GenerationDependencies> generationDependencies = new ArrayList<>();
+    public List<GenerationDependencies> getGenerationDependencies() {
+        return generationDependencies;
     }
 
-    public List<EGD> getEGD() {
-        return new ArrayList<>(egdList);
-    }
-
-    public void addEGD(EGD egd){
-        egdList.add(egd);
-    }
-
-    public void addTGD(TGD tgd){
-        tgdList.add(tgd);
+    public void addGenerationDependency(GenerationDependencies generationDependency){
+        generationDependencies.add(generationDependency);
     }
 
     private final String dbName;

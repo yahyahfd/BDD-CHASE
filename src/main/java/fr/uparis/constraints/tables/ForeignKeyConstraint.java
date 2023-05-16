@@ -1,4 +1,6 @@
-package fr.uparis.database;
+package fr.uparis.constraints.tables;
+
+import fr.uparis.database.Table;
 
 public class ForeignKeyConstraint {
     /**

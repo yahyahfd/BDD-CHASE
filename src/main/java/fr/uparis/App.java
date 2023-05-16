@@ -7,9 +7,10 @@ import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import fr.uparis.algorithms.ConstantAtoms;
-import fr.uparis.algorithms.EGD;
 import fr.uparis.algorithms.EqualityAtom;
-import fr.uparis.algorithms.TGD;
+import fr.uparis.constraints.database.EGD;
+import fr.uparis.constraints.database.GenerationDependencies;
+import fr.uparis.constraints.database.TGD;
 import fr.uparis.database.*;
 import fr.uparis.exceptions.FormatException;
 
@@ -44,11 +45,11 @@ public class App
         EGD firstEGD = new EGD();
         firstEGD.addRelationalAtomLeft(etudiants, null, myDb);
         EqualityAtom eAtomA = new EqualityAtom("NomMaster", etudiants, false);
-        EqualityAtom eAtomB = new EqualityAtom("IMPAR", etudiants, true);
+        EqualityAtom eAtomB = new EqualityAtom("IMPAIR", etudiants, true);
         EqualityAtom eAtomC = new EqualityAtom("IMPAIR", etudiants, true);
         firstEGD.addEqualityAtomRight(Pair.of(eAtomA,eAtomC));
         firstEGD.addEqualityAtomLeft(Pair.of(eAtomA,eAtomB));
-        myDb.addEGD(firstEGD);
+        myDb.addGenerationDependency(firstEGD);
 
         // ajout des TGD
         TGD firstTGD = new TGD();
@@ -57,7 +58,7 @@ public class App
         firstTGD.addRelationalAtomLeft(etudiants, cAtom, myDb);
         firstTGD.addRelationalAtomRight(masters, cAtom, myDb);
         firstTGD.addCommonValue("NomMaster");
-        myDb.addTGD(firstTGD);
+        myDb.addGenerationDependency(firstTGD);
 
         // ajout des tuples
         List<MutablePair<String, Object>> etudiant1 = new ArrayList<>();
@@ -102,12 +103,15 @@ public class App
             }
             System.out.println(Database.evaluator.getVariables());
 
-            for(int i = 0; i <myDb.getEGD().size();i++){
-                System.out.println("LeftEGD_"+i+" :"+myDb.getEGD().get(i).isSatisfied(true));
-                System.out.println("RightEGD_"+i+" :"+myDb.getEGD().get(i).isSatisfied(false));
-            }
-            for(int i = 0; i <myDb.getTGD().size();i++){
-                System.out.println("TGD_"+i+" :"+myDb.getTGD().get(i).isSatisfied());
+            for(int i = 0; i <myDb.getGenerationDependencies().size();i++){
+                GenerationDependencies generationDependency = myDb.getGenerationDependencies().get(i);
+                if(generationDependency instanceof EGD){
+                    System.out.println("EGD_"+i+" :"+generationDependency.isSatisfied());
+                }
+                if(generationDependency instanceof TGD){
+                    System.out.println("TGD_"+i+" :"+generationDependency.isSatisfied());
+                }
+                
             }
         } catch (Exception e) {
             e.printStackTrace();

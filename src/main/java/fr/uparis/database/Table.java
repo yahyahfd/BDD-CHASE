@@ -5,6 +5,10 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+
+import fr.uparis.constraints.tables.CheckConstraint;
+import fr.uparis.constraints.tables.Constraints;
+import fr.uparis.constraints.tables.ForeignKeyConstraint;
 import fr.uparis.exceptions.FormatException;
 import net.sourceforge.jeval.EvaluationException;
 

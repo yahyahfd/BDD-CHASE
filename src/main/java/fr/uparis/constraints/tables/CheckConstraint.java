@@ -1,5 +1,6 @@
-package fr.uparis.database;
+package fr.uparis.constraints.tables;
 
+import fr.uparis.database.Database;
 import fr.uparis.exceptions.FormatException;
 
 public class CheckConstraint {

@@ -62,11 +62,11 @@ public class EGD extends GenerationDependencies {
         for (Pair<EqualityAtom, EqualityAtom> equalityAtomLeft : equalityAtoms) {
             // On selectionne la table qui nous interessent dans les relations:
             Table leftEqualityTable = equalityAtomLeft.getLeft().table();
-            String leftAttribute = (String) equalityAtomLeft.getLeft().attribute();
+            Object leftAttribute = equalityAtomLeft.getLeft().attribute();
             boolean leftConstant = equalityAtomLeft.getLeft().isConstant();
 
             Table rightEqualityTable = equalityAtomLeft.getRight().table();
-            String rightAttribute = (String) equalityAtomLeft.getRight().attribute();
+            Object rightAttribute = equalityAtomLeft.getRight().attribute();
             boolean rightConstant = equalityAtomLeft.getRight().isConstant();
 
             for (Pair<Table, List<List<Object>>> filtedTable : filteredTables) {
@@ -84,11 +84,13 @@ public class EGD extends GenerationDependencies {
                                         // on throw une exception plutot pour dire que c'est la condition qui est
                                         // bizarre
                                         // return false;
+                                        System.out.println("Une EGD présente n'a pas de sens: " + leftAttribute
+                                                + " est tout le temps différent de " + rightAttribute);
                                         return null;
                                         // on retourne false parce que x !=y et on cherche à vérifier si x == y
                                     }
                                 } else {// constant;attribute
-                                    int rightIndex = rightEqualityTable.getColumnIndex(rightAttribute);
+                                    int rightIndex = rightEqualityTable.getColumnIndex((String) rightAttribute);
 
                                     // for(List<Object>)
                                     // on cherche chaque attribut correspondant dans les tuples selectionnés
@@ -103,7 +105,7 @@ public class EGD extends GenerationDependencies {
                                                     tuple);
 
                                             // Contient la colonne et la nouvelle valeur
-                                            Pair<String, Object> columnValueIncorrect = Pair.of(rightAttribute,
+                                            Pair<String, Object> columnValueIncorrect = Pair.of((String) rightAttribute,
                                                     leftAttribute);
 
                                             return Pair.of(tableTupleIncorrect, columnValueIncorrect);
@@ -111,49 +113,60 @@ public class EGD extends GenerationDependencies {
                                     }
                                 }
                             } else { // left est un attribut
-                                int leftIndex = leftEqualityTable.getColumnIndex(leftAttribute);
+                                int leftIndex = leftEqualityTable.getColumnIndex((String) leftAttribute);
                                 if (rightConstant) {// attribute;constant
+                                    boolean foundValue = false;
+                                    List<Object> resultTuple = null;
                                     for (List<Object> tuple : filtedTable.getRight()) {
                                         Object value = tuple.get(leftIndex);
                                         if (!value.equals(rightAttribute)) {
-                                            // On doit retourner la table, le tuple et l'attribut à modifier plus la
-                                            // valeur
-                                            // table et tuple à corriger
-                                            Pair<Table, List<Object>> tableTupleIncorrect = Pair.of(leftEqualityTable,
-                                                    tuple);
-
-                                            // Contient la colonne et la nouvelle valeur
-                                            Pair<String, Object> columnValueIncorrect = Pair.of(leftAttribute,
-                                                    rightAttribute);
-
-                                            return Pair.of(tableTupleIncorrect, columnValueIncorrect);
+                                            resultTuple = tuple;
+                                            continue;
+                                        } else {
+                                            foundValue = true;
+                                            break;
                                         }
                                     }
+                                    if (!foundValue) {
+                                        // On doit retourner la table, le tuple et l'attribut à modifier plus la
+                                        // valeur
+                                        // table et tuple à corriger
+                                        Pair<Table, List<Object>> tableTupleIncorrect = Pair.of(leftEqualityTable,
+                                                resultTuple);
+
+                                        // Contient la colonne et la nouvelle valeur
+                                        Pair<String, Object> columnValueIncorrect = Pair.of((String) leftAttribute,
+                                                rightAttribute);
+
+                                        return Pair.of(tableTupleIncorrect, columnValueIncorrect);
+                                    }
                                 } else { // attribute;attribute
-                                    int rightIndex = rightEqualityTable.getColumnIndex(rightAttribute);
+                                    int rightIndex = rightEqualityTable.getColumnIndex((String) rightAttribute);
                                     boolean foundValue = false;
+                                    List<Object> resultTuple = null;
                                     for (List<Object> tuple_left : filtedTable.getRight()) {
                                         Object valueLeft = tuple_left.get(leftIndex);
                                         for (List<Object> tuple_right : filtedTable_bis.getRight()) {
                                             Object valueRight = tuple_right.get(rightIndex);
                                             if (!valueLeft.equals(valueRight)) {
+                                                resultTuple = tuple_right;
                                                 continue;
-                                            }else{
+                                            } else {
                                                 foundValue = true;
                                                 break; // on passe au tuple suivant gauche
                                             }
                                         }
-                                        if(!foundValue){
+                                        if (!foundValue) {
                                             // On doit retourner la table, le tuple et l'attribut à modifier plus la
                                             // valeur
                                             // table et tuple à corriger
                                             // on considere que droite est fausse: traiter le cas où gauche est faux
                                             // et contient null?
                                             Pair<Table, List<Object>> tableTupleIncorrect = Pair
-                                                    .of(rightEqualityTable, null);
+                                                    .of(rightEqualityTable, resultTuple);
 
                                             // Contient la colonne et la nouvelle valeur
-                                            Pair<String, Object> columnValueIncorrect = Pair.of(rightAttribute,
+                                            Pair<String, Object> columnValueIncorrect = Pair.of((String) rightAttribute,
                                                     valueLeft);
 
                                             return Pair.of(tableTupleIncorrect, columnValueIncorrect);
@@ -169,9 +182,10 @@ public class EGD extends GenerationDependencies {
         return null;
     }
 
-    // renvoie null si la partie gauche n'est pas satisfaite, sinon renvoie la droite
+    // renvoie null si la partie gauche n'est pas satisfaite, sinon renvoie la
+    // droite
     public Pair<Pair<Table, List<Object>>, Pair<String, Object>> isSatisfied() throws FormatException {
-        if(isSatisfied(true)==null){// gauche valide
+        if (isSatisfied(true) == null) {// gauche valide
             return isSatisfied(false); // null si droite valide, les valeurs invalides de gauche sinon
         }
         return null; // Si gauche invalide c'est bon

@@ -313,6 +313,7 @@ public class Table {
         return result;
     }
 
+    // List<MutablePair<String, Object>>
     public boolean updateTuple(List<Object> oldTuple, Pair<String, Object> newValue, Database dBase) throws FormatException{
         int indexColumn = getColumnIndex(newValue.getLeft());
         for (List<Object> row : rows) {
@@ -324,7 +325,7 @@ public class Table {
 
                 // on supprime le row et on en rajoute un nouveau avec les modifications.
                 // c'est pour respecter les contraintes CHECK ou autre sur la table
-                newTuple.set(indexColumn, newValue);
+                newTuple.set(indexColumn, newValue.getRight());
                 deleteRow(row);
                 List<String> columnNames = getColumns();
                 List<MutablePair<String, Object>> newRow = new ArrayList<>();

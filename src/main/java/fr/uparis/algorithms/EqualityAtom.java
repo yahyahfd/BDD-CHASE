@@ -7,4 +7,4 @@ import fr.uparis.database.Table;
 // si constantes non null, elle fera office de filtre pour l'EGD 
 // si value est spécifiée, on ne cherche pas la valeur qui correspond à attribute dans table
 // mais plutot les tuples dans table qui on value pour valeur de attribute   
-public record EqualityAtom(String attribute, Table table, boolean isConstant) {}
+public record EqualityAtom(Object attribute, Table table, boolean isConstant) {}

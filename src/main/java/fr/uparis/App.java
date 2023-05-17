@@ -21,12 +21,18 @@ public class App
         System.out.println( "Starting the program..." );        
         Database myDb = new Database("myDB");
         // Ajout des tables
+        Table emprunts = new Table("Emprunts");
+        myDb.createTable(emprunts);
+        emprunts.addColumn("idLivre",Integer.class);
+        emprunts.addColumn("NumEtudiant",Integer.class);
+        List<String> primaryKeysEmprunts = new ArrayList<>();
+        primaryKeysEmprunts.add("idLivre");
+        emprunts.setPrimaryKeyColumns(primaryKeysEmprunts);
         Table masters = new Table("Masters");
         myDb.createTable(masters);
-        masters.addColumn("ID",Integer.class);
         masters.addColumn("NomMaster",String.class);
         List<String> primaryKeysMaster = new ArrayList<>();
-        primaryKeysMaster.add("ID");
+        primaryKeysMaster.add("NomMaster");
         masters.setPrimaryKeyColumns(primaryKeysMaster);
         Table etudiants = new Table("Etudiants");
         myDb.createTable(etudiants);
@@ -42,14 +48,24 @@ public class App
         primaryKeys.add("NumEtudiant");
         etudiants.setPrimaryKeyColumns(primaryKeys);
         // ajout des EGD
+        // Si dans ma table etudiants, j'ai un master IMPAIR -> j'ai IMPAIR à droite (renvoie null car tuple non trouvé)
         EGD firstEGD = new EGD();
         firstEGD.addRelationalAtomLeft(etudiants, null, myDb);
         EqualityAtom eAtomA = new EqualityAtom("NomMaster", etudiants, false);
         EqualityAtom eAtomB = new EqualityAtom("IMPAIR", etudiants, true);
-        EqualityAtom eAtomC = new EqualityAtom("IMPAIR", etudiants, true);
+        EqualityAtom eAtomC = new EqualityAtom("IMPAIR", masters, true);
         firstEGD.addEqualityAtomRight(Pair.of(eAtomA,eAtomC));
         firstEGD.addEqualityAtomLeft(Pair.of(eAtomA,eAtomB));
         myDb.addGenerationDependency(firstEGD);
+
+        // Si dans emprunts j'ai un num étudiant -> je dois avoir un eleve avec ce num étudiant dans etudiants
+        EGD secondEGD = new EGD();
+        secondEGD.addRelationalAtomLeft(emprunts, null, myDb);
+        secondEGD.addRelationalAtomLeft(etudiants, null, myDb);
+        EqualityAtom eAtomD = new EqualityAtom("NumEtudiant", etudiants, false);
+        EqualityAtom eAtomE = new EqualityAtom("NumEtudiant", emprunts, false);
+        secondEGD.addEqualityAtomRight(Pair.of(eAtomD,eAtomE));
+        myDb.addGenerationDependency(secondEGD);
 
         // ajout des TGD
         TGD firstTGD = new TGD();
@@ -62,7 +78,7 @@ public class App
 
         // ajout des tuples
         List<MutablePair<String, Object>> etudiant1 = new ArrayList<>();
-        MutablePair<String,Object> numEtudiant1 = MutablePair.of("NumEtudiant",(Object)71800578);
+        MutablePair<String,Object> numEtudiant1 = MutablePair.of("NumEtudiant",(Object)2);
         MutablePair<String,Object> nomEtudiant1 = MutablePair.of("Nom",(Object)"Hafid");
         MutablePair<String,Object> prenomEtudiant1 = MutablePair.of("Prenom",(Object)"Yahya");
         etudiant1.add(numEtudiant1);
@@ -82,6 +98,11 @@ public class App
         master1.add(idMaster1);
         master1.add(nomMaster1);
 
+        List<MutablePair<String, Object>> emprunt1 = new ArrayList<>();
+        MutablePair<String,Object> idLivre1 = MutablePair.of("idLivre",(Object)0);
+        MutablePair<String,Object> numEtudiantEmprunt1 = MutablePair.of("NumEtudiant",(Object)71800578);
+        emprunt1.add(idLivre1);
+        emprunt1.add(numEtudiantEmprunt1);
 
         try {
             etudiants.addRow(etudiant1,myDb);
@@ -89,6 +110,8 @@ public class App
             System.out.println("Les étudiants ont été rajoutés avec succès !");
             masters.addRow(master1, myDb);
             System.out.println("Les masters ont été rajoutés avec succès !");
+            emprunts.addRow(emprunt1,myDb);
+            System.out.println("Les emprunts ont été rajoutés avec succès !");
 
             // test du select
             List<Pair<String,?>> conditions = new ArrayList<>();
@@ -106,10 +129,12 @@ public class App
             for(int i = 0; i <myDb.getGenerationDependencies().size();i++){
                 GenerationDependencies generationDependency = myDb.getGenerationDependencies().get(i);
                 if(generationDependency instanceof EGD){
-                    System.out.println("EGD_"+i+" :"+generationDependency.isSatisfied());
+                    EGD egd_cast = (EGD) generationDependency;
+                    System.out.println("EGD_"+i+" :"+egd_cast.isSatisfied());
                 }
                 if(generationDependency instanceof TGD){
-                    System.out.println("TGD_"+i+" :"+generationDependency.isSatisfied());
+                    TGD tgd_cast = (TGD) generationDependency;
+                    System.out.println("TGD_"+i+" :"+tgd_cast.isSatisfied());
                 }
                 
             }

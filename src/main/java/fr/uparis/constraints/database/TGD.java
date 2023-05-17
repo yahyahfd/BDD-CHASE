@@ -6,7 +6,6 @@ import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import fr.uparis.algorithms.ConstantAtoms;
 import fr.uparis.database.Database;
 import fr.uparis.database.Table;
 import fr.uparis.exceptions.FormatException;
@@ -29,7 +28,7 @@ public class TGD extends GenerationDependencies {
         commonValues.add(columnName);
     }
 
-    public Pair<Pair<Integer, Object>, Pair<Table, List<Object>>> isSatisfied() throws FormatException {
+    public Pair<Table, Pair<String, Object>> isSatisfied() throws FormatException {
         Set<Pair<Table, List<List<Object>>>> left = filterTable(getRelationalAtomsLeft());
         Set<Pair<Table, List<List<Object>>>> right = filterTable(relationalAtomsRight);
 
@@ -55,17 +54,15 @@ public class TGD extends GenerationDependencies {
                     // On parcourt les Tuples des 2 côtés
                     for (List<Object> leftTuple : leftTuples) {
                         // Pair<Table, List<Object>> leftCorrect = Pair.of(leftTable, leftTuple);
-                        Pair<Integer,Object> correctValue =Pair.of(indexRight,leftTuple.get(indexLeft));
+                        Pair<String,Object> correctValue =Pair.of(columnName,leftTuple.get(indexLeft));
 
                         if (rightTuples.size() == 0)
-                            return Pair.of(correctValue, Pair.of(rightTable, null));
+                            return Pair.of(rightTable,correctValue);
                         for (List<Object> rightTuple : rightTuples) {
                             // On renvoie false si les 2 valeurs censées être égales ne le sont pas
                             if (!leftTuple.get(indexLeft).equals(rightTuple.get(indexRight))) {
-                                // ON doit return les tuples qui sont pas bon
-                                // Pair du tuple et de sa table à gauche (reci à droite)
-                                Pair<Table, List<Object>> rightIncorrect = Pair.of(rightTable, rightTuple);
-                                return Pair.of(correctValue, rightIncorrect);
+                                // On renvoie le premier tuple non bon?
+                                return Pair.of(rightTable,correctValue);
                             }
                         }
                     }

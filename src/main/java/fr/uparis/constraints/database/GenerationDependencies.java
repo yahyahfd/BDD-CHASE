@@ -7,7 +7,6 @@ import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import fr.uparis.algorithms.ConstantAtoms;
 import fr.uparis.database.Database;
 import fr.uparis.database.Table;
 import fr.uparis.exceptions.FormatException;

@@ -1,6 +1,9 @@
 package fr.uparis.algorithms;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import fr.uparis.constraints.database.*;
 import fr.uparis.database.Database;
@@ -44,26 +47,23 @@ public class Standard {
                      * ajouter un nouveau tuple u a D
                      * t.q. D ∪ u satisfait e
                      */
-                    // TGD tgd = (TGD) generationDependency;
-                    // Pair<Pair<Integer, Object>, Pair<Table, List<Object>>> toAdd = tgd.isSatisfied();
-                    // do {
-                    //     Pair<Integer, Object> correctValue = toAdd.getLeft();
-                    //     Pair<Table, List<Object>> rightTableTuple = toAdd.getRight();// à corriger
-                    //     // on doit créer le tuple de rightTable et l'ajouter à notre Table
-                    //     if (rightTableTuple.getRight() == null) {// pas de tuple donc on en crée un
-                    //         // On crée un tuple
-
-                    //     } else {
-                    //         // sinon on modifie le tuple existant et rajoute le nouveau
-
-                    //     }
-
-                    //     toAdd = tgd.isSatisfied();
-                    // } while (toAdd != null);
+                    TGD tgd = (TGD) generationDependency;
+                    Pair<Table, Pair<String, Object>> toAdd = tgd.isSatisfied();
+                    while(toAdd!=null){
+                        // Quel tuple rajouter à D?
+                        Table table = toAdd.getLeft();
+                        MutablePair<String, Object> correctValue = MutablePair.of(toAdd.getRight());// à corriger
+                        // on doit créer le tuple de rightTable et l'ajouter à notre Table
+                        // List<MutablePair<String, Object>> columnValues
+                        List<MutablePair<String,Object>> test = new ArrayList<>();
+                        test.add(correctValue);
+                        boolean trueorfalse = table.addRow(test, database);
+                        System.out.println("updated? " + trueorfalse);
+                        toAdd = tgd.isSatisfied();
+                    }
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
             return false;
         }
         // renvoyer false si D non satisfaite si on arrete le programme? je ne sais pas

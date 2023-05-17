@@ -1,4 +1,4 @@
-package fr.uparis.algorithms;
+package fr.uparis.constraints.database;
 
 import java.util.HashSet;
 import java.util.Set;

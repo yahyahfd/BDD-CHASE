@@ -187,88 +187,85 @@ public class Table {
 
     // rajoute un tuple à notre table s'il ne partage pas les mêmes clefs primaires
     // qu'un tuple existant, etc...
-    public boolean addRow(List<MutablePair<String, Object>> columnValues, Database dBase) {
-        try {
-            List<Object> resultValues = new ArrayList<>(Collections.nCopies(columns.size(), null));
-            List<Object> rowValues = new ArrayList<>();
-            for (Pair<String, Object> pair : columnValues) {
-                rowValues.add(pair.getRight());
+    public boolean addRow(List<MutablePair<String, Object>> columnValues, Database dBase)
+            throws FormatException, EvaluationException {
+        List<Object> resultValues = new ArrayList<>(Collections.nCopies(columns.size(), null));
+        List<Object> rowValues = new ArrayList<>();
+        for (Pair<String, Object> pair : columnValues) {
+            rowValues.add(pair.getRight());
+        }
+        List<Class<?>> columnTypes = new ArrayList<>(columns.values());
+        List<String> notNull = new ArrayList<>(constraints.getNotNullConstraints());
+        LinkedHashMap<String, Object> defaultValues = new LinkedHashMap<>(constraints.getDefaultValues());
+        List<List<String>> uniqueConstraints = new ArrayList<>(constraints.getUniqueConstraints());
+        List<ForeignKeyConstraint> foreignKeyConstraints = new ArrayList<>(constraints.getForeignKeyConstraints());
+        // Contrainte PRIMARY KEY
+        if (rowDoublon(rowValues, new ArrayList<>(constraints.getPrimaryKeyColumns()))) {
+            throw new FormatException("Table " + name
+                    + " : Le tuple que vous souhaitez rajouter partage les mêmes valeurs de clef primaire d'un autre tuple existant");
+        }
+        if (rowValues.size() > columns.size()) {
+            throw new FormatException("Table " + name
+                    + " : Le nombre de couples colonne-valeur doit-être inférieur ou égal au nombre de colonnes.");
+        }
+        List<String> emptyValues = new ArrayList<>(getColumns());
+        for (int i = 0; i < columnValues.size(); i++) {
+            String columnName = columnValues.get(i).getLeft();
+            Object value = columnValues.get(i).getRight();
+            // verification du type en premier
+            int index = getColumnIndex(columnName);
+            Class<?> type = columnTypes.get(index);
+            if (!value.getClass().equals(type)) {
+                throw new FormatException("Table " + name + " : L'objet " + value + " est de type "
+                        + value.getClass() + " alors que le type "
+                        + type + " était attendu à la colonne " + columnName);
             }
-            List<Class<?>> columnTypes = new ArrayList<>(columns.values());
-            List<String> notNull = new ArrayList<>(constraints.getNotNullConstraints());
-            LinkedHashMap<String, Object> defaultValues = new LinkedHashMap<>(constraints.getDefaultValues());
-            List<List<String>> uniqueConstraints = new ArrayList<>(constraints.getUniqueConstraints());
-            List<ForeignKeyConstraint> foreignKeyConstraints = new ArrayList<>(constraints.getForeignKeyConstraints());
-            // Contrainte PRIMARY KEY
-            if (rowDoublon(rowValues, new ArrayList<>(constraints.getPrimaryKeyColumns()))) {
+            emptyValues.remove(columnName);
+            // Contrainte FOREIGN KEY
+            for (ForeignKeyConstraint foreignKeyConstraint : foreignKeyConstraints) {
+                if (foreignKeyConstraint.getReferencingColumn().equals(columnName)) {
+                    Table foreignTable = foreignKeyConstraint.getReferencedTable();
+                    if (!foreignTable.columnContainsValue(value, foreignKeyConstraint.getReferencedColumn())) {
+                        throw new FormatException("Table " + name + " : L'objet " + value
+                                + " n'existe pas dans la table " + foreignTable.getName());
+                    }
+                }
+            }
+            resultValues.set(index, value);
+        }
+
+        for (int i = 0; i < resultValues.size(); i++) {
+            if (resultValues.get(i) == null) {
+                String columnName = getColumns().get(i);
+                // Contrainte DEFAULT
+                resultValues.set(i, defaultValues.get(columnName));
+
+                // contrainte NOT NULL
+                if (notNull.contains(columnName)) {
+                    throw new FormatException("Table " + name + " : " + columnName + " ne doit pas être null.");
+                }
+            }
+        }
+        // Contrainte UNIQUE
+        for (List<String> uniqueConstraint : uniqueConstraints) {
+            if (rowDoublon(rowValues, uniqueConstraint)) {
                 throw new FormatException("Table " + name
                         + " : Le tuple que vous souhaitez rajouter partage les mêmes valeurs de clef primaire d'un autre tuple existant");
             }
-            if (rowValues.size() > columns.size()) {
-                throw new FormatException("Table " + name
-                        + " : Le nombre de couples colonne-valeur doit-être inférieur ou égal au nombre de colonnes.");
-            }
-            List<String> emptyValues = new ArrayList<>(getColumns());
-            for (int i = 0; i < columnValues.size(); i++) {
-                String columnName = columnValues.get(i).getLeft();
-                Object value = columnValues.get(i).getRight();
-                // verification du type en premier
-                int index = getColumnIndex(columnName);
-                Class<?> type = columnTypes.get(index);
-                if (!value.getClass().equals(type)) {
-                    throw new FormatException("Table " + name + " : L'objet " + value + " est de type "
-                            + value.getClass() + " alors que le type "
-                            + type + " était attendu à la colonne " + columnName);
-                }
-                emptyValues.remove(columnName);
-                // Contrainte FOREIGN KEY
-                for (ForeignKeyConstraint foreignKeyConstraint : foreignKeyConstraints) {
-                    if (foreignKeyConstraint.getReferencingColumn().equals(columnName)) {
-                        Table foreignTable = foreignKeyConstraint.getReferencedTable();
-                        if (!foreignTable.columnContainsValue(value, foreignKeyConstraint.getReferencedColumn())) {
-                            throw new FormatException("Table " + name + " : L'objet " + value
-                                    + " n'existe pas dans la table " + foreignTable.getName());
-                        }
-                    }
-                }
-                resultValues.set(index, value);
-            }
-
-            for (int i = 0; i < resultValues.size(); i++) {
-                if (resultValues.get(i) == null) {
-                    String columnName = getColumns().get(i);
-                    // Contrainte DEFAULT
-                    resultValues.set(i, defaultValues.get(columnName));
-
-                    // contrainte NOT NULL
-                    if (notNull.contains(columnName)) {
-                        throw new FormatException("Table " + name + " : " + columnName + " ne doit pas être null.");
-                    }
-                }
-            }
-            // Contrainte UNIQUE
-            for (List<String> uniqueConstraint : uniqueConstraints) {
-                if (rowDoublon(rowValues, uniqueConstraint)) {
-                    throw new FormatException("Table " + name
-                            + " : Le tuple que vous souhaitez rajouter partage les mêmes valeurs de clef primaire d'un autre tuple existant");
-                }
-            }
-
-            // Contrainte CHECK
-            if (!evaluateBeforeAdding()) {
-                throw new FormatException("Table " + name
-                        + " : Le tuple que vous souhaitez rajouter ne respecte pas une contrainte CHECK");
-            }
-            this.rows.add(new ArrayList<>(resultValues));
-            for (int i = 0; i < resultValues.size(); i++) {
-                // TableName.indiceRow.colonne : valeur
-                Database.evaluator.putVariable(name + "." + (rows.size() - 1) + "." + getColumns().get(i),
-                        resultValues.get(i).toString());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
         }
+
+        // Contrainte CHECK
+        if (!evaluateBeforeAdding()) {
+            throw new FormatException("Table " + name
+                    + " : Le tuple que vous souhaitez rajouter ne respecte pas une contrainte CHECK");
+        }
+        this.rows.add(new ArrayList<>(resultValues));
+        for (int i = 0; i < resultValues.size(); i++) {
+            // TableName.indiceRow.colonne : valeur
+            Database.evaluator.putVariable(name + "." + (rows.size() - 1) + "." + getColumns().get(i),
+                    resultValues.get(i).toString());
+        }
+
         return true;
     }
 
@@ -314,7 +311,8 @@ public class Table {
     }
 
     // List<MutablePair<String, Object>>
-    public boolean updateTuple(List<Object> oldTuple, Pair<String, Object> newValue, Database dBase) throws FormatException{
+    public boolean updateTuple(List<Object> oldTuple, Pair<String, Object> newValue, Database dBase)
+            throws FormatException, EvaluationException {
         int indexColumn = getColumnIndex(newValue.getLeft());
         for (List<Object> row : rows) {
             // On vérifie si c'est le bon tuple

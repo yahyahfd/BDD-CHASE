@@ -6,10 +6,10 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
-import fr.uparis.algorithms.ConstantAtoms;
-import fr.uparis.algorithms.EqualityAtom;
 import fr.uparis.algorithms.Standard;
+import fr.uparis.constraints.database.ConstantAtoms;
 import fr.uparis.constraints.database.EGD;
+import fr.uparis.constraints.database.EqualityAtom;
 import fr.uparis.constraints.database.GenerationDependencies;
 import fr.uparis.constraints.database.TGD;
 import fr.uparis.database.*;
@@ -93,13 +93,16 @@ public class App
         // myDb.addGenerationDependency(trdEDG);
 
         // ajout des TGD
+        // Pour chaque étudiant, s'il est dans un Master, le master doit exister dans la table Masters
         TGD firstTGD = new TGD();
-        ConstantAtoms cAtom = new ConstantAtoms();
-        cAtom.addConstante(Pair.of("NomMaster","IMPAIR"));
-        firstTGD.addRelationalAtomLeft(etudiants, cAtom, myDb);
-        firstTGD.addRelationalAtomRight(masters, cAtom, myDb);
+        firstTGD.addRelationalAtomLeft(etudiants, null, myDb);
+        firstTGD.addRelationalAtomRight(masters, null, myDb);
         firstTGD.addCommonValue("NomMaster");
         myDb.addGenerationDependency(firstTGD);
+
+
+        ConstantAtoms cAtom = new ConstantAtoms();
+        cAtom.addConstante(Pair.of("NomMaster","IMPAIR"));
 
         // ajout des tuples
         List<MutablePair<String, Object>> etudiant1 = new ArrayList<>();
@@ -116,6 +119,15 @@ public class App
         etudiant2.add(numEtudiant2);
         etudiant2.add(nomEtudiant2);
         etudiant2.add(prenomEtudiant2);
+        List<MutablePair<String,Object>> etudiant3 = new ArrayList<>();
+        MutablePair<String,Object> numEtudiant3 = MutablePair.of("NumEtudiant",(Object)999999);
+        MutablePair<String,Object> nomEtudiant3 = MutablePair.of("Nom",(Object)"TestNom");
+        MutablePair<String,Object> prenomEtudiant3 = MutablePair.of("Prenom",(Object)"TestPrenom");
+        MutablePair<String,Object> masterEtudiant3 = MutablePair.of("NomMaster",(Object)"LP");
+        etudiant3.add(numEtudiant3);
+        etudiant3.add(nomEtudiant3);
+        etudiant3.add(prenomEtudiant3);
+        etudiant3.add(masterEtudiant3);
 
         List<MutablePair<String, Object>> master1 = new ArrayList<>();
         MutablePair<String,Object> nomMaster1 = MutablePair.of("NomMaster",(Object)"IMPAIR");
@@ -132,6 +144,7 @@ public class App
         try {
             etudiants.addRow(etudiant1,myDb);
             etudiants.addRow(etudiant2,myDb);
+            etudiants.addRow(etudiant3,myDb);
             System.out.println("Les étudiants ont été rajoutés avec succès !");
             masters.addRow(master1, myDb);
             System.out.println("Les masters ont été rajoutés avec succès !");
@@ -143,28 +156,33 @@ public class App
             conditions.add(Pair.of("Nom", "Hafid"));
             conditions.add(Pair.of("NumEtudiant", 71800578));
 
-
             List<List<Object>> result = etudiants.selectFromTable(conditions);
             System.out.println("Résultats du select: ");
             for(List<Object> row: result){
                 System.out.println(row);
             }
-            System.out.println(Database.evaluator.getVariables());
+            printGenerationDependencies(myDb);
             Standard.chase(myDb);
-            for(int i = 0; i <myDb.getGenerationDependencies().size();i++){
-                GenerationDependencies generationDependency = myDb.getGenerationDependencies().get(i);
-                if(generationDependency instanceof EGD){
-                    EGD egd_cast = (EGD) generationDependency;
-                    System.out.println("EGD_"+i+" :"+egd_cast.isSatisfied());
-                }
-                if(generationDependency instanceof TGD){
-                    TGD tgd_cast = (TGD) generationDependency;
-                    System.out.println("TGD_"+i+" :"+tgd_cast.isSatisfied());
-                }
-            }
-            System.out.println(Database.evaluator.getVariables());
+            printGenerationDependencies(myDb);
+            
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+    private static void printGenerationDependencies(Database myDb) throws FormatException{
+        System.out.println(Database.evaluator.getVariables());
+        for(int i = 0; i <myDb.getGenerationDependencies().size();i++){
+            GenerationDependencies generationDependency = myDb.getGenerationDependencies().get(i);
+            if(generationDependency instanceof EGD){
+                EGD egd_cast = (EGD) generationDependency;
+                System.out.println("EGD_"+i+" :"+egd_cast.isSatisfied());
+            }
+            if(generationDependency instanceof TGD){
+                TGD tgd_cast = (TGD) generationDependency;
+                System.out.println("TGD_"+i+" :"+tgd_cast.isSatisfied());
+            }
+        }
+    }
+    
 }

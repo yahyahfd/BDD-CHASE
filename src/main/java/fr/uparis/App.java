@@ -205,7 +205,8 @@ public class App
         }
         
         printGenerationDependencies(myDb);
-        Standard.chase(myDb);
+        //Standard.chase(myDb);
+        Standard.obliviousChase(myDb);
         exportTableCSV(emprunts,"Emprunts_modifié.csv");
         exportTableCSV(etudiants,"Etudiants_modifié.csv");
         exportTableCSV(masters,"Masters_modifié.csv");

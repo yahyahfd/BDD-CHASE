@@ -1,5 +1,6 @@
 package fr.uparis.constraints.database;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -8,6 +9,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import fr.uparis.database.Database;
 import fr.uparis.database.Table;
 import fr.uparis.exceptions.FormatException;
+import fr.uparis.exceptions.InvalidConditionException;
+import fr.uparis.exceptions.TupleNotFoundException;
 
 public class EGD extends GenerationDependencies {
     // logique de premier ordre suite de et logique
@@ -44,7 +47,7 @@ public class EGD extends GenerationDependencies {
 
     // Si true, on prend le left, si false, on prend le right
     private Pair<Pair<Table, List<Object>>, Pair<String, Object>> isSatisfied(boolean leftRight)
-            throws FormatException {
+            throws FormatException, InvalidConditionException, TupleNotFoundException {
         // liste des tuples qui nous interessent dans chaque table.
         Set<Pair<Table, List<List<Object>>>> filteredTables = filterTable(getRelationalAtomsLeft());
 
@@ -56,118 +59,144 @@ public class EGD extends GenerationDependencies {
 
         Set<Pair<EqualityAtom, EqualityAtom>> equalityAtoms;
         equalityAtoms = leftRight ? equalityAtomsLeft : equalityAtomsRight;
+        for(Pair<Table,List<List<Object>>> filteredTableA :filteredTables){
+            for(Pair<Table,List<List<Object>>> filteredTableB :filteredTables){
+                for(Pair<EqualityAtom,EqualityAtom> equalityAtom : equalityAtoms){
+                    Table leftEqualityTable = equalityAtom.getLeft().table();
+                    Object leftAttribute = equalityAtom.getLeft().attribute();
+                    boolean leftConstant = equalityAtom.getLeft().isConstant();
 
-        for (Pair<EqualityAtom, EqualityAtom> equalityAtomLeft : equalityAtoms) {
-            // On selectionne la table qui nous interessent dans les relations:
-            Table leftEqualityTable = equalityAtomLeft.getLeft().table();
-            Object leftAttribute = equalityAtomLeft.getLeft().attribute();
-            boolean leftConstant = equalityAtomLeft.getLeft().isConstant();
-
-            Table rightEqualityTable = equalityAtomLeft.getRight().table();
-            Object rightAttribute = equalityAtomLeft.getRight().attribute();
-            boolean rightConstant = equalityAtomLeft.getRight().isConstant();
-
-            for (Pair<Table, List<List<Object>>> filtedTable : filteredTables) {
-                if (filtedTable.getLeft().equals(leftEqualityTable)) {// On a trouvé une table qui est impliquée
-                    // On vérifie maintenant si la partie droite du pair (les tuples)
-                    // contiennent la colonne qui nous interesse dans la liste
-                    // Si value est spécifiée dans equalityAtom, on filtre sur les colonnes de nom
-                    // columnName qui ont pour valeur cette valeur
-                    // List<List<Object>> tuplesFiltered = filtedTable.getLeft()
-                    for (Pair<Table, List<List<Object>>> filtedTable_bis : filteredTables) {
-                        if (filtedTable_bis.getLeft().equals(rightEqualityTable)) {// On a trouvé une table impliquée
-                            if (leftConstant) {// c'est une constante
-                                if (rightConstant) {// constant;constant
+                    Table rightEqualityTable = equalityAtom.getRight().table();
+                    Object rightAttribute = equalityAtom.getRight().attribute();
+                    boolean rightConstant = equalityAtom.getRight().isConstant();
+                    // On a trouvé une table impliqué par la gauche dans l'égalité
+                    if(filteredTableA.getLeft().equals(leftEqualityTable)){
+                        // On a trouvé une table impliqué par la droite dans l'égalité
+                        if(filteredTableB.getLeft().equals(rightEqualityTable)){
+                            // Si l'égalité est valide, on ne fait rien
+                            // Si l'égalité est fausse, on renvoie le tuple faux
+                            if(leftConstant){// La gauche est une constante
+                                if(rightConstant){// La droite est une constante
                                     if (!leftAttribute.equals(rightAttribute)) {
-                                        // on throw une exception plutot pour dire que c'est la condition qui est
-                                        // bizarre
-                                        // return false;
-                                        System.out.println("Une EGD présente n'a pas de sens: " + leftAttribute
-                                                + " est tout le temps différent de " + rightAttribute);
-                                        return null;
-                                        // on retourne false parce que x !=y et on cherche à vérifier si x == y
+                                        throw new InvalidConditionException("Une EGD présente n'a pas de sens: " + leftAttribute
+                                        + " est tout le temps différent de " + rightAttribute);
                                     }
-                                } else {// constant;attribute
+                                }else{// constant;attribute
+                                    // Index de la colonne spécifiée dans l'égalité droite
                                     int rightIndex = rightEqualityTable.getColumnIndex((String) rightAttribute);
-
-                                    // for(List<Object>)
-                                    // on cherche chaque attribut correspondant dans les tuples selectionnés
-                                    // si un seul a une valeur differente de leftAttribute.parseInt
-                                    for (List<Object> tuple : filtedTable_bis.getRight()) {
-                                        Object value = tuple.get(rightIndex);
-                                        if (!value.equals(leftAttribute)) {
-                                            // On doit retourner la table, le tuple et l'attribut à modifier plus la
-                                            // valeur
-                                            // table et tuple à corriger
-                                            Pair<Table, List<Object>> tableTupleIncorrect = Pair.of(rightEqualityTable,
-                                                    tuple);
-
-                                            // Contient la colonne et la nouvelle valeur
-                                            Pair<String, Object> columnValueIncorrect = Pair.of((String) rightAttribute,
-                                                    leftAttribute);
-
-                                            return Pair.of(tableTupleIncorrect, columnValueIncorrect);
+                                    boolean foundValue = false;
+                                    for(List<Object> tuple : filteredTableB.getRight()){
+                                        Object value = tuple.get(rightIndex); // On récupère notre valeur de droite
+                                        // On teste si on a trouvé le bon attribut
+                                        if(value.equals(leftAttribute)){
+                                            foundValue = true;
+                                            break; // L'EGD est satisfaite
                                         }
                                     }
+                                    if(!foundValue){// On n'a pas trouvé un seul tuple correct?
+                                        // l'EGD n'est pas satisfaite, on ne peut pas la corriger vu qu'il s'agit d'une 
+                                        //  constante
+                                        /* THROW UNE EXCEPTION -> return false dans le standard*/
+                                        throw new TupleNotFoundException("EGD non satisfaite. Aucun tuple dans la table "
+                                        +rightEqualityTable+" ne contient la valeur "+leftAttribute+" à la colonne "+ rightAttribute);
+                                    }
                                 }
-                            } else { // left est un attribut
-                                int leftIndex = leftEqualityTable.getColumnIndex((String) leftAttribute);
-                                if (rightConstant) {// attribute;constant
+                            }else{// La gauche est un attribut
+                                if(rightConstant){// La droite est une constante
+                                    // Index de la colonne spécifiée dans l'égalité gauche
+                                    int leftIndex = leftEqualityTable.getColumnIndex((String) leftAttribute);
                                     boolean foundValue = false;
-                                    List<Object> resultTuple = null;
-                                    for (List<Object> tuple : filtedTable.getRight()) {
+                                    for(List<Object> tuple: filteredTableA.getRight()){
                                         Object value = tuple.get(leftIndex);
-                                        if (!value.equals(rightAttribute)) {
-                                            resultTuple = tuple;
-                                            continue;
-                                        } else {
+                                        if(value.equals(rightAttribute)){
                                             foundValue = true;
                                             break;
                                         }
                                     }
-                                    if (!foundValue) {
-                                        // On doit retourner la table, le tuple et l'attribut à modifier plus la
-                                        // valeur
-                                        // table et tuple à corriger
-                                        Pair<Table, List<Object>> tableTupleIncorrect = Pair.of(leftEqualityTable,
-                                                resultTuple);
-
-                                        // Contient la colonne et la nouvelle valeur
-                                        Pair<String, Object> columnValueIncorrect = Pair.of((String) leftAttribute,
-                                                rightAttribute);
-
-                                        return Pair.of(tableTupleIncorrect, columnValueIncorrect);
+                                    if(!foundValue){// On n'a pas trouvé un seul tuple correct?
+                                    // l'EGD n'est pas satisfaite, on ne peut pas la corriger vu qu'il s'agit d'une 
+                                    //  constante
+                                    /* THROW UNE EXCEPTION -> return false dans le standard*/
+                                    throw new TupleNotFoundException("EGD non satisfaite. Aucun tuple dans la table "
+                                        +leftEqualityTable+" ne contient la valeur "+rightAttribute+" à la colonne "+ leftAttribute);
                                     }
-                                } else { // attribute;attribute
+                                }else{// attribute;attribute
+                                    // pour chaque attribut gauche, je cherche l'attribut de droite correspondant
+                                    int leftIndex = leftEqualityTable.getColumnIndex((String) leftAttribute);
                                     int rightIndex = rightEqualityTable.getColumnIndex((String) rightAttribute);
-                                    boolean foundValue = false;
-                                    List<Object> resultTuple = null;
-                                    for (List<Object> tuple_left : filtedTable.getRight()) {
+                                    for (List<Object> tuple_left : filteredTableA.getRight()) {
+                                        boolean foundValue = false;
                                         Object valueLeft = tuple_left.get(leftIndex);
-                                        for (List<Object> tuple_right : filtedTable_bis.getRight()) {
+                                        for (List<Object> tuple_right : filteredTableB.getRight()) {
                                             Object valueRight = tuple_right.get(rightIndex);
-                                            if (!valueLeft.equals(valueRight)) {
-                                                resultTuple = tuple_right;
-                                                continue;
-                                            } else {
+                                            if (valueLeft.equals(valueRight)) {
                                                 foundValue = true;
-                                                break; // on passe au tuple suivant gauche
+                                                break;
                                             }
                                         }
                                         if (!foundValue) {
-                                            // On doit retourner la table, le tuple et l'attribut à modifier plus la
-                                            // valeur
-                                            // table et tuple à corriger
-                                            // on considere que droite est fausse: traiter le cas où gauche est faux
-                                            // et contient null?
-                                            Pair<Table, List<Object>> tableTupleIncorrect = Pair
-                                                    .of(rightEqualityTable, resultTuple);
+                                            // l'EGD n'est pas satisfaite par ce tuple,
+                                            // on peut renvoyer le tuple gauche et la table droite
+                                            // Ou juste throw une exception
+                                            boolean foundToCorrect = false;
+                                            for(List<Object> tuple_right: filteredTableB.getRight()){
+                                                List<Pair<EqualityAtom,EqualityAtom>> equalityAtomsTmp = new ArrayList<>();
+                                                equalityAtomsTmp.addAll(equalityAtomsLeft);
+                                                equalityAtomsTmp.addAll(equalityAtomsRight);
+                                                for(int i = 0; i<equalityAtomsTmp.size();i++){
+                                                    Pair<EqualityAtom,EqualityAtom> equalityAtomTmp = equalityAtomsTmp.get(i);
+                                                    boolean isConstantLeft = equalityAtomTmp.getLeft().isConstant();
+                                                    if(!isConstantLeft){
+                                                        Table tableLeft = equalityAtomTmp.getLeft().table();
+                                                        Object attributeLeft = equalityAtomTmp.getLeft().attribute();
+                                                        if(tableLeft.equals(filteredTableB.getLeft())){// égalité correcte à gauche
+                                                            boolean isConstantRight = equalityAtomTmp.getRight().isConstant();
+                                                            if(!isConstantRight){
+                                                                Object attributeRight = equalityAtomTmp.getRight().attribute();
+                                                                Table tableRight = equalityAtomTmp.getRight().table();
+                                                                if(tableRight.equals(filteredTableA.getLeft())){
+                                                                    int attributeIndexLeft = tableLeft.getColumnIndex((String) attributeLeft);
+                                                                    int attributeIndexRight = tableRight.getColumnIndex((String) attributeRight);
+                                                                    if(tuple_left.get(attributeIndexRight)
+                                                                    .equals(tuple_right.get(attributeIndexLeft))){
+                                                                        foundToCorrect = true;
+                                                                    }else{
+                                                                        if(foundToCorrect){
+                                                                            // return le tuple
+                                                                        Pair<Table, List<Object>> tableTupleIncorrect = Pair
+                                                                                .of(rightEqualityTable, tuple_right);
 
-                                            // Contient la colonne et la nouvelle valeur
-                                            Pair<String, Object> columnValueIncorrect = Pair.of((String) rightAttribute,
-                                                    valueLeft);
+                                                                        // Contient la colonne et la nouvelle valeur
+                                                                        Pair<String, Object> columnValueIncorrect = Pair.of((String) rightAttribute,
+                                                                                valueLeft);
 
-                                            return Pair.of(tableTupleIncorrect, columnValueIncorrect);
+                                                                        return Pair.of(tableTupleIncorrect, columnValueIncorrect);
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                        if(foundToCorrect){
+                                                            // return le tuple
+                                                        Pair<Table, List<Object>> tableTupleIncorrect = Pair
+                                                                .of(rightEqualityTable, tuple_right);
+
+                                                        // Contient la colonne et la nouvelle valeur
+                                                        Pair<String, Object> columnValueIncorrect = Pair.of((String) rightAttribute,
+                                                                valueLeft);
+
+                                                        return Pair.of(tableTupleIncorrect, columnValueIncorrect);
+                                                        }
+                                                    }
+                                                }
+
+                                                // On fait une liste de colonnes en commun avec tuple_left et les égalités
+                                            }
+                                            // On a notre tuple gauche
+                                            // throw new TupleNotFoundException("EGD non satisfaite. Aucun tuple dans la table "
+                                            // +leftEqualityTable+" ne contient de valeur équivalente à celle d'un tuple dans la table "
+                                            // +rightEqualityTable+" à la colonne "+rightAttribute+". On cherchait la valeur "+tuple_left.get(leftIndex)
+                                            // +" dans la deuxième table, mais on n'y a trouvé que ");
                                         }
                                     }
                                 }
@@ -182,7 +211,7 @@ public class EGD extends GenerationDependencies {
 
     // renvoie null si la partie gauche n'est pas satisfaite, sinon renvoie la
     // droite
-    public Pair<Pair<Table, List<Object>>, Pair<String, Object>> isSatisfied() throws FormatException {
+    public Pair<Pair<Table, List<Object>>, Pair<String, Object>> isSatisfied() throws FormatException, InvalidConditionException, TupleNotFoundException {
         if (isSatisfied(true) == null) {// gauche valide
             return isSatisfied(false); // null si droite valide, les valeurs invalides de gauche sinon
         }

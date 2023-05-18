@@ -103,4 +103,44 @@ public class TGD extends GenerationDependencies {
         }
         return null;
     }
+
+    public Pair<Table, List<Object>> isSatisfiedOblivious() throws FormatException {
+        Set<Pair<Table, List<List<Object>>>> left = filterTable(getRelationalAtomsLeft());
+        Set<Pair<Table, List<List<Object>>>> right = filterTable(relationalAtomsRight);
+
+        for (Pair<Table, List<List<Object>>> leftPair : left) {// Pour chaque Relation à gauche (R1(x))
+            Table leftTable = leftPair.getLeft();
+            List<String> leftColumns = leftTable.getColumns();
+            for (Pair<Table, List<List<Object>>> rightPair : right) {// Pour chaque relation à droite (R2(x))
+                Table rightTable = rightPair.getLeft();
+                List<String> rightColumns = rightTable.getColumns();
+                // On vérifie si R1 et R2 ont des colonnes présentes dans la liste de
+                // commonValues
+                leftColumns.retainAll(commonValues);
+                rightColumns.retainAll(commonValues);
+                leftColumns.retainAll(rightColumns);// on stocke les colonnes en communs entre les 2 tables, mais aussi
+                // à retenir dans notre dépendance
+
+                // On doit maintenant parcours les tuples cad la partie droite de leftPair
+                List<List<Object>> leftTuples = leftPair.getRight();
+                List<List<Object>> rightTuples = rightPair.getRight();
+
+                for (List<Object> leftTuple : leftTuples) {
+
+                    //List<Object> correctionTuple = new ArrayList<>();
+
+                    List<Object> correctionTuple = new ArrayList<>(Collections.nCopies(rightTuples.size()+1, null));
+
+                    for (String leftColumn : leftColumns) {
+                        int index_right = rightTable.getColumnIndex(leftColumn);
+                        int index_light = rightTable.getColumnIndex(leftColumn);
+                        correctionTuple.set(index_right, leftTuple.get(index_light));
+                    }
+
+                    return Pair.of(rightTable, correctionTuple);
+                }
+            }
+        }
+        return null;
+    }
 }

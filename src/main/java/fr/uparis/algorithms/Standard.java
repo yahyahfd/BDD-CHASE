@@ -36,9 +36,9 @@ public class Standard {
                         // FormatException{
                         Pair<String, Object> newValue = toModify.getRight();
                         Pair<Table, List<Object>> tableAndTuple = toModify.getLeft();
-                        boolean trueorfalse = tableAndTuple.getLeft().updateTuple(tableAndTuple.getRight(),
+                        tableAndTuple.getLeft().updateTuple(tableAndTuple.getRight(),
                                 newValue, database);
-                        System.out.println("updated? " + trueorfalse);
+                        System.out.println("EGD update:" +tableAndTuple.getLeft()+" :"+ newValue);
                         toModify = egd.isSatisfied();
                     }
                 }
@@ -59,16 +59,17 @@ public class Standard {
                             int index = table.getColumnIndex(columnName);
                             rowsToAdd.add(MutablePair.of(columnName,newTuple.get(index)));
                         }
-                        boolean trueorfalse = table.addRow(rowsToAdd, database);
-                        System.out.println("updated TGD? " + trueorfalse);
+                        table.addRow(rowsToAdd, database);
+                        System.out.println("TGD update:" + rowsToAdd);
                         toAdd = tgd.isSatisfied();
                     }
                 }
             }
         } catch (Exception e) {
+            e.printStackTrace();
             return false;
         }
-        // renvoyer false si D non satisfaite si on arrete le programme? je ne sais pas
+        
         return true;
     }
 }

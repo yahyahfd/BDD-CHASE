@@ -14,6 +14,7 @@ public class Constraints {
     private final Set<CheckConstraint> checkConstraints;
     private final Set<String> primaryKeyColumns;
     private final Set<ForeignKeyConstraint> foreignKeyConstraints;
+    private final Set<String> autoIncrement;
 
     public Constraints(){
         notNullConstraints = new HashSet<>();
@@ -22,10 +23,15 @@ public class Constraints {
         checkConstraints = new HashSet<>();
         primaryKeyColumns = new HashSet<>();
         foreignKeyConstraints = new HashSet<>();
+        autoIncrement = new HashSet<>();
     }
 
     public Set<CheckConstraint> getCheckConstraints(){
         return new HashSet<>(checkConstraints);
+    }
+
+    public Set<String> getAutoIncrement(){
+        return new HashSet<>(autoIncrement);
     }
     
     public Set<String> getNotNullConstraints(){
@@ -75,5 +81,9 @@ public class Constraints {
 
     public void addForeignKeyConstraints(ForeignKeyConstraint foreignKeyConstraint){
         foreignKeyConstraints.add(foreignKeyConstraint);
+    }
+
+    public void addAutoIncrement(String columnName){
+        autoIncrement.add(columnName);
     }
 }

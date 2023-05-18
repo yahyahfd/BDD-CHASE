@@ -16,7 +16,6 @@ import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class Table {
-
     // Nom de la table
     private String name;
     // à chaque nom de colonne, on associe un type
@@ -30,6 +29,10 @@ public class Table {
     // indexes des colonnes de la clef primaire : les colonnes qui constituent la
     // clef
     private final List<Integer> primaryKeyIndexes = new ArrayList<>();
+
+    public String toString() {
+        return this.name;
+    }
 
     public Table(String name) {
         this.name = name;
@@ -57,6 +60,16 @@ public class Table {
     public void addCheckConstraints(List<CheckConstraint> checkConstraints) {
         for (CheckConstraint checkConstraint : checkConstraints) {
             constraints.addCheckConstraint(checkConstraint);
+        }
+    }
+
+    public void addAutoIncrement(List<String> columnNames) throws FormatException {
+        for (String cName : columnNames) {
+            if(!columns.get(cName).equals(Integer.class)){
+                throw new FormatException(
+                    "Table " + name + " : Vous ne pouvez rajouter auto-increment qu'à un type INT");
+            }
+            constraints.addAutoIncrement(cName);
         }
     }
 
@@ -174,7 +187,8 @@ public class Table {
             boolean doublon = true;
             for (String columnName : columnNames) {
                 int indexColumn = getColumnIndex(columnName);
-                if (!rowValues.get(indexColumn).equals(row.get(indexColumn))) {// c'est bon, on passe au row suivant
+                if (rowValues.get(indexColumn) != null && !rowValues.get(indexColumn).equals(row.get(indexColumn))) {
+                    // c'est bon, on passe au row suivant
                     doublon = false;
                     break;
                 }
@@ -196,14 +210,11 @@ public class Table {
         }
         List<Class<?>> columnTypes = new ArrayList<>(columns.values());
         List<String> notNull = new ArrayList<>(constraints.getNotNullConstraints());
+        List<String> autoIncrement = new ArrayList<>(constraints.getAutoIncrement());
         LinkedHashMap<String, Object> defaultValues = new LinkedHashMap<>(constraints.getDefaultValues());
         List<List<String>> uniqueConstraints = new ArrayList<>(constraints.getUniqueConstraints());
         List<ForeignKeyConstraint> foreignKeyConstraints = new ArrayList<>(constraints.getForeignKeyConstraints());
-        // Contrainte PRIMARY KEY
-        if (rowDoublon(rowValues, new ArrayList<>(constraints.getPrimaryKeyColumns()))) {
-            throw new FormatException("Table " + name
-                    + " : Le tuple que vous souhaitez rajouter partage les mêmes valeurs de clef primaire d'un autre tuple existant");
-        }
+
         if (rowValues.size() > columns.size()) {
             throw new FormatException("Table " + name
                     + " : Le nombre de couples colonne-valeur doit-être inférieur ou égal au nombre de colonnes.");
@@ -214,7 +225,16 @@ public class Table {
             Object value = columnValues.get(i).getRight();
             // verification du type en premier
             int index = getColumnIndex(columnName);
+
+            // Contrainte AUTO INCREMENT
             Class<?> type = columnTypes.get(index);
+            if(value == null && autoIncrement.contains(columnName)){
+                int max = getMax(columnName);
+                int newValue = max+1;
+                resultValues.set(i, newValue);
+                value = newValue;
+                rowValues.set(index, newValue);
+            }
             if (!value.getClass().equals(type)) {
                 throw new FormatException("Table " + name + " : L'objet " + value + " est de type "
                         + value.getClass() + " alors que le type "
@@ -234,6 +254,11 @@ public class Table {
             resultValues.set(index, value);
         }
 
+        // Contrainte PRIMARY KEY
+        if (rowDoublon(rowValues, new ArrayList<>(constraints.getPrimaryKeyColumns()))) {
+            throw new FormatException("Table " + name
+                    + " : Le tuple que vous souhaitez rajouter partage les mêmes valeurs de clef primaire d'un autre tuple existant "+rowValues);
+        }
         for (int i = 0; i < resultValues.size(); i++) {
             if (resultValues.get(i) == null) {
                 String columnName = getColumns().get(i);
@@ -267,6 +292,24 @@ public class Table {
         }
 
         return true;
+    }
+
+    private int getMax(String columnName) throws FormatException{
+        int max = 0;
+        int index = getColumnIndex(columnName);
+        for(List<Object> row: rows){
+            Object valueObject = row.get(index);
+            int value = 0;
+            if(valueObject.getClass().equals(Integer.class)){
+                value = (int)row.get(index);
+            }else{
+                value = Integer.parseInt((String) row.get(index));
+            }
+            if(value > max){
+                max = value;
+            }
+        }
+        return max;
     }
 
     private boolean evaluateBeforeAdding() throws EvaluationException {

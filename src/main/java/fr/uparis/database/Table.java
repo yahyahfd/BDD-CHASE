@@ -34,6 +34,14 @@ public class Table {
         return this.name;
     }
 
+    public List<String> getTypes(){
+        List<String> result = new ArrayList<>();
+        for(Class<?> type : columns.values()){
+            result.add(type.getSimpleName());
+        }
+        return result;
+    }
+    
     public Table(String name) {
         this.name = name;
         Database.evaluator.putVariable("Table_" + name, name);

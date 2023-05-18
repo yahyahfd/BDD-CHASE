@@ -2,6 +2,7 @@ package fr.uparis;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,7 +11,7 @@ import java.util.Scanner;
 
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-
+import com.opencsv.CSVWriter;
 import fr.uparis.algorithms.Standard;
 import fr.uparis.constraints.database.EGD;
 import fr.uparis.constraints.database.EqualityAtom;
@@ -23,7 +24,7 @@ import net.sourceforge.jeval.EvaluationException;
 public class App 
 {
 
-    public static void main( String[] args ) throws FormatException
+    public static void main( String[] args ) throws FormatException, IOException
     {
         System.out.println( "Starting the program..." );        
         Database myDb = new Database("myDB");
@@ -181,8 +182,6 @@ public class App
             }
         }
 
-
-
         // test du select
         List<Pair<String,?>> conditions = new ArrayList<>();
         conditions.add(Pair.of("Nom", "Hafid"));
@@ -196,8 +195,27 @@ public class App
         
         printGenerationDependencies(myDb);
         Standard.chase(myDb);
+        exportTableCSV(emprunts,"Emprunts_modifié.csv");
+        exportTableCSV(etudiants,"Etudiants_modifié.csv");
+        exportTableCSV(masters,"Masters_modifié.csv");
         printGenerationDependencies(myDb);
         scanner.close();
+    }
+
+    private static void exportTableCSV(Table table, String filePath) throws IOException{
+        List<String> columnNames = table.getColumns();
+        List<String> types = table.getTypes();
+        try (CSVWriter writer = new CSVWriter(new FileWriter(filePath),';','\0','\\',"\n")) {
+            
+            writer.writeNext(columnNames.toArray(new String[0]));
+            writer.writeNext(types.toArray(new String[0]));
+            for(List<Object> row :table.getRows()){
+                writer.writeNext(row.stream().map(Object::toString).toArray(String[]::new));
+            }
+            System.out.println("Export des données vers le fichier CSV réussi.");
+        }catch(Exception e){
+            System.err.println("Erreur lors de l'export des données vers le fichier CSV : " + e.getMessage());
+        }
     }
 
     private static void parseCSV(Table table,Database dBase, String csvFilePath) throws IOException, FormatException, EvaluationException {

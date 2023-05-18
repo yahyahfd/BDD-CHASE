@@ -48,17 +48,19 @@ public class Standard {
                      * t.q. D ∪ u satisfait e
                      */
                     TGD tgd = (TGD) generationDependency;
-                    Pair<Table, Pair<String, Object>> toAdd = tgd.isSatisfied();
-                    while(toAdd!=null){
-                        // Quel tuple rajouter à D?
+                    Pair<Table, List<Object>> toAdd = tgd.isSatisfied();
+                    
+
+                    while (toAdd != null) {
+                        List<MutablePair<String, Object>> rowsToAdd = new ArrayList<>();
                         Table table = toAdd.getLeft();
-                        MutablePair<String, Object> correctValue = MutablePair.of(toAdd.getRight());// à corriger
-                        // on doit créer le tuple de rightTable et l'ajouter à notre Table
-                        // List<MutablePair<String, Object>> columnValues
-                        List<MutablePair<String,Object>> test = new ArrayList<>();
-                        test.add(correctValue);
-                        boolean trueorfalse = table.addRow(test, database);
-                        System.out.println("updated? " + trueorfalse);
+                        List<Object> newTuple = toAdd.getRight();
+                        for (String columnName : table.getColumns()) {
+                            int index = table.getColumnIndex(columnName);
+                            rowsToAdd.add(MutablePair.of(columnName,newTuple.get(index)));
+                        }
+                        boolean trueorfalse = table.addRow(rowsToAdd, database);
+                        System.out.println("updated TGD? " + trueorfalse);
                         toAdd = tgd.isSatisfied();
                     }
                 }

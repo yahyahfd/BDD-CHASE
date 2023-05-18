@@ -1,5 +1,7 @@
 package fr.uparis.constraints.database;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,7 +30,7 @@ public class TGD extends GenerationDependencies {
         commonValues.add(columnName);
     }
 
-    public Pair<Table, Pair<String, Object>> isSatisfied() throws FormatException {
+    public Pair<Table, List<Object>> isSatisfied() throws FormatException {
         Set<Pair<Table, List<List<Object>>>> left = filterTable(getRelationalAtomsLeft());
         Set<Pair<Table, List<List<Object>>>> right = filterTable(relationalAtomsRight);
 
@@ -44,27 +46,56 @@ public class TGD extends GenerationDependencies {
                 rightColumns.retainAll(commonValues);
                 leftColumns.retainAll(rightColumns);// on stocke les colonnes en communs entre les 2 tables, mais aussi
                                                     // à retenir dans notre dépendance
-                for (String columnName : leftColumns) {
-                    int indexLeft = leftTable.getColumnIndex(columnName);
-                    int indexRight = rightTable.getColumnIndex(columnName);
-                    // On doit maintenant parcours les tuples cad la partie droite de leftPair et
-                    // rightPair
-                    List<List<Object>> leftTuples = leftPair.getRight();
-                    List<List<Object>> rightTuples = rightPair.getRight();
-                    // On parcourt les Tuples des 2 côtés
-                    for (List<Object> leftTuple : leftTuples) {
-                        // Pair<Table, List<Object>> leftCorrect = Pair.of(leftTable, leftTuple);
-                        Pair<String,Object> correctValue =Pair.of(columnName,leftTuple.get(indexLeft));
 
-                        if (rightTuples.size() == 0)
-                            return Pair.of(rightTable,correctValue);
-                        for (List<Object> rightTuple : rightTuples) {
-                            // On renvoie false si les 2 valeurs censées être égales ne le sont pas
-                            if (!leftTuple.get(indexLeft).equals(rightTuple.get(indexRight))) {
-                                // On renvoie le premier tuple non bon?
-                                return Pair.of(rightTable,correctValue);
+                // On doit maintenant parcours les tuples cad la partie droite de leftPair et
+                // rightPair
+                List<List<Object>> leftTuples = leftPair.getRight();
+                List<List<Object>> rightTuples = rightPair.getRight();
+                // On parcourt les Tuples des 2 côtés
+                for (List<Object> leftTuple : leftTuples) {
+                    // Par défaut, tant qu'on a pas vérifié les colonnes en commun, foundValue est à
+                    // true si
+                    // rightTuple est non vide, sinon false
+                    boolean foundValue = true;
+
+                    if (rightTuples.size() == 0) {
+                        foundValue = false;
+                    } // Aucun tuple à droite...
+                    List<Object> correctionTuple = new ArrayList<>();
+                    for (List<Object> rightTuple : rightTuples) {
+                        for (String columnName : leftColumns) {
+                            int indexLeft = leftTable.getColumnIndex(columnName);
+                            int indexRight = rightTable.getColumnIndex(columnName);
+                            if (leftTuple.get(indexLeft).equals(rightTuple.get(indexRight))) {
+                                // On a trouvé une colonne correcte
+                                // foundValue est mise à true à chaque colonne correcte
+                                foundValue = true;
+                            } else {
+                                // et est mise à false à la première colonne incorrecte + break pour passer au
+                                // tuple droit suivant
+                                correctionTuple = new ArrayList<>(Collections.nCopies(rightTuple.size(), null));
+                                foundValue = false;
+                                break;
                             }
                         }
+                        if(foundValue){// ON a trouvé le bon tuple, on doit passer au tuple gauche suivant
+                            // après itération sur toutes les colonnes en commun, on a trouvé un tuple
+                            // ou si il n'y a aucun élément en commun entre la tête et la queue
+                            // Exemple: R1(x,y) -> R2(z,t) : veut dire que si il y a un tuple dans
+                            // R1(quelconque), il y en a un dans R2 (quelconque)
+                            // On passe donc au tuple gauche suivant...
+                            break;
+                        }
+                    }
+                    if (!foundValue) {
+                        // Sinon, on doit renvoyer le tuple correcteur directement et donc arreter
+                        // l'evaluation de l'EGD
+                        // On crée le tuple droit avec full null, puis on rempli les commonColumns avec
+                        // les valeur de tuple gauche
+                        for (int i = 0; i < leftColumns.size(); i++) {
+                            correctionTuple.set(i, leftTuple.get(leftTable.getColumnIndex(leftColumns.get(i))));
+                        }
+                        return Pair.of(rightTable,correctionTuple);
                     }
                 }
             }

@@ -93,7 +93,8 @@ public class TGD extends GenerationDependencies {
                         // On crée le tuple droit avec full null, puis on rempli les commonColumns avec
                         // les valeur de tuple gauche
                         for (int i = 0; i < leftColumns.size(); i++) {
-                            correctionTuple.set(i, leftTuple.get(leftTable.getColumnIndex(leftColumns.get(i))));
+                            int index_right = rightTable.getColumnIndex(leftColumns.get(i));
+                            correctionTuple.set(index_right, leftTuple.get(leftTable.getColumnIndex(leftColumns.get(i))));
                         }
                         return Pair.of(rightTable,correctionTuple);
                     }

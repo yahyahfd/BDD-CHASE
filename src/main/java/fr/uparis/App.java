@@ -19,12 +19,14 @@ import fr.uparis.constraints.database.GenerationDependencies;
 import fr.uparis.constraints.database.TGD;
 import fr.uparis.database.*;
 import fr.uparis.exceptions.FormatException;
+import fr.uparis.exceptions.InvalidConditionException;
+import fr.uparis.exceptions.TupleNotFoundException;
 import net.sourceforge.jeval.EvaluationException;
 
 public class App 
 {
 
-    public static void main( String[] args ) throws FormatException, IOException
+    public static void main( String[] args ) throws FormatException, IOException, InvalidConditionException, TupleNotFoundException
     {
         System.out.println( "Starting the program..." );        
         Database myDb = new Database("myDB");
@@ -159,6 +161,14 @@ public class App
                     emprunt1.add(idLivre1);
                     emprunt1.add(numEtudiantEmprunt1);
                     emprunt1.add(nomEtudiantEmprunt1);
+                    List<MutablePair<String, Object>> emprunt2 = new ArrayList<>();
+                    MutablePair<String,Object> idLivre2 = MutablePair.of("idLivre",(Object)1);
+                    MutablePair<String,Object> numEtudiantEmprunt2 = MutablePair.of("NumEtudiant",(Object)71702333);
+                    MutablePair<String,Object> nomEtudiantEmprunt2 = MutablePair.of("Nom",(Object)"Meziane");
+                    emprunt2.add(idLivre2);
+                    emprunt2.add(numEtudiantEmprunt2);
+                    emprunt2.add(nomEtudiantEmprunt2);
+
                     etudiants.addRow(etudiant1,myDb);
                     etudiants.addRow(etudiant2,myDb);
                     etudiants.addRow(etudiant3,myDb);
@@ -166,6 +176,7 @@ public class App
                     masters.addRow(master1, myDb);
                     System.out.println("Les masters ont été rajoutés avec succès !");
                     emprunts.addRow(emprunt1,myDb);
+                    emprunts.addRow(emprunt2,myDb);
                     System.out.println("Les emprunts ont été rajoutés avec succès !");
                 } else if (choice.equals(2)) {
                     System.out.println("Vous avez choisi de parser les fichiers CSV pour remplir les tables.");
@@ -285,7 +296,7 @@ public class App
     }
 
 
-    private static void printGenerationDependencies(Database myDb) throws FormatException{
+    private static void printGenerationDependencies(Database myDb) throws FormatException, InvalidConditionException, TupleNotFoundException{
         // System.out.println(Database.evaluator.getVariables());
         for(int i = 0; i <myDb.getGenerationDependencies().size();i++){
             GenerationDependencies generationDependency = myDb.getGenerationDependencies().get(i);

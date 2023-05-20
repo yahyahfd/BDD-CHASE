@@ -9,17 +9,16 @@ import fr.uparis.constraints.database.*;
 import fr.uparis.database.Database;
 import fr.uparis.database.Table;
 
-public class Oblivious {
+public class Skolem {
 
-    public static boolean obliviousChase(Database database, long maxExecutionTimeMillis) {
-        long startTime = System.currentTimeMillis();
-        long endTime = startTime + maxExecutionTimeMillis;
+    public static boolean obliviousSkolemChase(Database database) {
 
         //liste de tuples
         try {
             for (GenerationDependencies generationDependency : database.getGenerationDependencies()) {
-                // liste qui contient les tuples deja traitées
-                ArrayList<List<Object>> list = new ArrayList<>();
+                // liste qui contient les tuples left et right deja traitées
+                ArrayList<List<Object>> listLeft = new ArrayList<>(), listRight = new ArrayList<>();
+
                 // On vérifie pour chaque tuple de table si generationDependency.corps est
                 // satisfaite
                 // Si c'est le cas, on vérifie si ça satisfait PAS generationDependency.tete
@@ -31,7 +30,7 @@ public class Oblivious {
                     /*
                      * ajouter un nouveau tuple u a D
                      */
-                    Pair<Table, List<Object>> toAdd = tgd.isSatisfiedOblivious(list);
+                    Pair<Table, List<Object>> toAdd = tgd.isSatisfiedSkolem(listLeft, listRight);
 
                     while (toAdd != null) {
                         List<MutablePair<String, Object>> rowsToAdd = new ArrayList<>();
@@ -43,10 +42,7 @@ public class Oblivious {
                         }
                         table.addRow(rowsToAdd, database);
                         System.out.println("TGD update:" + rowsToAdd);
-                        toAdd = tgd.isSatisfiedOblivious(list);
-                        if(System.currentTimeMillis() >= endTime){
-                            return true; // si le temps est écoulé, fin de l'algo
-                        }
+                        toAdd = tgd.isSatisfiedSkolem(listLeft, listRight);
                     }
                 }
             }

@@ -96,6 +96,7 @@ public class TGD extends GenerationDependencies {
                             int index_right = rightTable.getColumnIndex(leftColumns.get(i));
                             correctionTuple.set(index_right, leftTuple.get(leftTable.getColumnIndex(leftColumns.get(i))));
                         }
+                        System.out.println("rightTable : "+rightTable+", correctionTuple : "+correctionTuple);
                         return Pair.of(rightTable,correctionTuple);
                     }
                 }
@@ -121,56 +122,30 @@ public class TGD extends GenerationDependencies {
                 leftColumns.retainAll(rightColumns);// on stocke les colonnes en communs entre les 2 tables, mais aussi
                 // à retenir dans notre dépendance
 
-                // On doit maintenant parcours les tuples
+                // On doit maintenant parcours les tuples cad la partie droite de leftPair et
+                // rightPair
                 List<List<Object>> leftTuples = leftPair.getRight();
                 List<List<Object>> rightTuples = rightPair.getRight();
-
-                for (List<Object> rightTuple : rightTuples) {
-
-                    boolean foundValue = true;
-
-                    if (rightTuples.size() == 0) {
-                        foundValue = false;
-                    }
-
-                    //List<Object> correctionTuple = new ArrayList<>();
-
+                // On parcourt les Tuples des 2 côtés
+                for (List<Object> leftTuple : leftTuples) {
                     List<Object> correctionTuple = new ArrayList<>();
-                    for (List<Object> leftTuple : leftTuples) {
-                        for (String columnName : rightColumns) {
-                            int indexLeft = leftTable.getColumnIndex(columnName);
-                            int indexRight = rightTable.getColumnIndex(columnName);
-                            if (leftTuple.get(indexLeft).equals(rightTuple.get(indexRight))) {
-                                // On a trouvé une colonne correcte
-                                // foundValue est mise à true à chaque colonne correcte
-                                foundValue = true;
-                            } else {
-                                // et est mise à false à la première colonne incorrecte + break pour passer au
-                                // tuple droit suivant
-                                correctionTuple = new ArrayList<>(Collections.nCopies(leftTuples.size(), null));
-                                foundValue = false;
+                    for (List<Object> rightTuple : rightTuples) {
+                        for (String ignored : leftColumns) {
+                                correctionTuple = new ArrayList<>(Collections.nCopies(rightTuple.size(), null));
                                 break;
-                            }
                         }
-                        if(foundValue){// ON a trouvé le bon tuple, on doit passer au tuple gauche suivant
-                            // après itération sur toutes les colonnes en commun, on a trouvé un tuple
-                            // ou si il n'y a aucun élément en commun entre la tête et la queue
-                            // Exemple: R1(x,y) -> R2(z,t) : veut dire que si il y a un tuple dans
-                            // R1(quelconque), il y en a un dans R2 (quelconque)
-                            // On passe donc au tuple gauche suivant...
-                            break;
-                        }
+                        break;
                     }
-                    if (!foundValue) {
+                    if (rightTuples.size() != 0) {
                         // Sinon, on doit renvoyer le tuple correcteur directement et donc arreter
                         // l'evaluation de l'EGD
                         // On crée le tuple droit avec full null, puis on rempli les commonColumns avec
                         // les valeur de tuple gauche
-                        for (int i = 0; i < leftColumns.size(); i++) {
-                            int index_left = leftTable.getColumnIndex(rightColumns.get(i));
-                            correctionTuple.set(index_left, rightTuple.get(rightTable.getColumnIndex(rightColumns.get(i))));
+                        for (String leftColumn : leftColumns) {
+                            int index_right = rightTable.getColumnIndex(leftColumn);
+                            correctionTuple.set(index_right, leftTuple.get(leftTable.getColumnIndex(leftColumn)));
                         }
-                        return Pair.of(leftTable,correctionTuple);
+                        return Pair.of(rightTable,correctionTuple);
                     }
                 }
             }

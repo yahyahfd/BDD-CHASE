@@ -30,7 +30,7 @@ public class Skolem {
                     /*
                      * ajouter un nouveau tuple u a D
                      */
-                    Pair<Table, List<Object>> toAdd = tgd.isSatisfiedObliviousSkolem(listLeft, listRight);
+                    Pair<Table, List<Object>> toAdd = tgd.isSatisfiedSkolem(listLeft, listRight);
 
                     while (toAdd != null) {
                         List<MutablePair<String, Object>> rowsToAdd = new ArrayList<>();
@@ -42,7 +42,7 @@ public class Skolem {
                         }
                         table.addRow(rowsToAdd, database);
                         System.out.println("TGD update:" + rowsToAdd);
-                        toAdd = tgd.isSatisfiedObliviousSkolem(listLeft, listRight);
+                        toAdd = tgd.isSatisfiedSkolem(listLeft, listRight);
                     }
                 }
             }

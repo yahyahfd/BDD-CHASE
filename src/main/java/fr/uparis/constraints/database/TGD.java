@@ -156,9 +156,11 @@ public class TGD extends GenerationDependencies {
         return null;
     }
 
-    public Pair<Table, List<Object>> isSatisfiedObliviousSkolem(ArrayList<List<Object>> listLeft, ArrayList<List<Object>> listRight) throws FormatException {
+    public Pair<Table, List<Object>> isSatisfiedSkolem(ArrayList<List<Object>> listLeft, ArrayList<List<Object>> listRight) throws FormatException {
         Set<Pair<Table, List<List<Object>>>> left = filterTable(getRelationalAtomsLeft());
         Set<Pair<Table, List<List<Object>>>> right = filterTable(relationalAtomsRight);
+
+        boolean foundInListRight = false;
 
         for (Pair<Table, List<List<Object>>> leftPair : left) {// Pour chaque Relation à gauche (R1(x))
             Table leftTable = leftPair.getLeft();
@@ -197,14 +199,12 @@ public class TGD extends GenerationDependencies {
                             for (String leftColumn : leftColumns) {
                                 int index_right = rightTable.getColumnIndex(leftColumn);
                                 correctionTuple.set(index_right, leftTuple.get(leftTable.getColumnIndex(leftColumn)));
-                                if(listRight.contains(correctionTuple)){
-                                    return null;
-                                } else {
-                                    listRight.add(correctionTuple);
-                                }
                             }
-                            listLeft.add(leftTuple);
-                            return Pair.of(rightTable, correctionTuple);
+                            if(!listRight.contains(correctionTuple)) {
+                                listLeft.add(leftTuple);
+                                listRight.add(correctionTuple);
+                                return Pair.of(rightTable, correctionTuple);
+                            }
                         }
                     }
                 }

@@ -11,11 +11,14 @@ import fr.uparis.database.Table;
 
 public class Oblivious {
 
-    public static boolean obliviousChase(Database database, int iterations) {
+    public static boolean obliviousChase(Database database, long maxExecutionTimeMillis) {
+        long startTime = System.currentTimeMillis();
+        long endTime = startTime + maxExecutionTimeMillis;
+
         //liste de tuples
-        ArrayList<List<Object>> list = new ArrayList<>();
         try {
             for (GenerationDependencies generationDependency : database.getGenerationDependencies()) {
+                ArrayList<List<Object>> list = new ArrayList<>();
                 // On vérifie pour chaque tuple de table si generationDependency.corps est
                 // satisfaite
                 // Si c'est le cas, on vérifie si ça satisfait PAS generationDependency.tete
@@ -37,9 +40,12 @@ public class Oblivious {
                             int index = table.getColumnIndex(columnName);
                             rowsToAdd.add(MutablePair.of(columnName,newTuple.get(index)));
                         }
-                        boolean trueorfalse = table.addRow(rowsToAdd, database);
-                        System.out.println("updated TGD? " + trueorfalse);
+                        table.addRow(rowsToAdd, database);
+                        System.out.println("TGD update:" + rowsToAdd);
                         toAdd = tgd.isSatisfiedOblivious(list);
+                        if(System.currentTimeMillis() >= endTime){
+                            return true; // si le temps est écoulé, fin de l'algo
+                        }
                     }
                 }
             }

@@ -12,7 +12,8 @@ import fr.uparis.database.Table;
 public class Oblivious {
 
     public static boolean obliviousChase(Database database, int iterations) {
-        int n = 0;
+        //liste de tuples
+        ArrayList<List<Object>> list = new ArrayList<>();
         try {
             for (GenerationDependencies generationDependency : database.getGenerationDependencies()) {
                 // On vérifie pour chaque tuple de table si generationDependency.corps est
@@ -21,13 +22,13 @@ public class Oblivious {
                 // et si e n'a pas été appliquée à ce tuple (? comment ça mon reuf, avec ces
                 // for, c'est deja le cas?)
 
-                if (generationDependency instanceof TGD tgd) {
+
+                if (generationDependency instanceof TGD tgd && !list.contains(generationDependency)) {
                     /*
                      * ajouter un nouveau tuple u a D
                      */
-                    Pair<Table, List<Object>> toAdd = tgd.isSatisfiedOblivious();
+                    Pair<Table, List<Object>> toAdd = tgd.isSatisfiedOblivious(list);
 
-                    System.out.println("toAdd = "+toAdd);
                     while (toAdd != null) {
                         List<MutablePair<String, Object>> rowsToAdd = new ArrayList<>();
                         Table table = toAdd.getLeft();
@@ -38,12 +39,7 @@ public class Oblivious {
                         }
                         boolean trueorfalse = table.addRow(rowsToAdd, database);
                         System.out.println("updated TGD? " + trueorfalse);
-                        if(n==iterations){
-                            return true;
-                        } else {
-                            n++;
-                        }
-                        toAdd = tgd.isSatisfiedOblivious();
+                        toAdd = tgd.isSatisfiedOblivious(list);
                     }
                 }
             }

@@ -96,7 +96,6 @@ public class TGD extends GenerationDependencies {
                             int index_right = rightTable.getColumnIndex(leftColumns.get(i));
                             correctionTuple.set(index_right, leftTuple.get(leftTable.getColumnIndex(leftColumns.get(i))));
                         }
-                        System.out.println("rightTable : "+rightTable+", correctionTuple : "+correctionTuple);
                         return Pair.of(rightTable,correctionTuple);
                     }
                 }
@@ -105,7 +104,7 @@ public class TGD extends GenerationDependencies {
         return null;
     }
 
-    public Pair<Table, List<Object>> isSatisfiedOblivious() throws FormatException {
+    public Pair<Table, List<Object>> isSatisfiedOblivious(ArrayList<List<Object>> l) throws FormatException {
         Set<Pair<Table, List<List<Object>>>> left = filterTable(getRelationalAtomsLeft());
         Set<Pair<Table, List<List<Object>>>> right = filterTable(relationalAtomsRight);
 
@@ -128,24 +127,28 @@ public class TGD extends GenerationDependencies {
                 List<List<Object>> rightTuples = rightPair.getRight();
                 // On parcourt les Tuples des 2 côtés
                 for (List<Object> leftTuple : leftTuples) {
-                    List<Object> correctionTuple = new ArrayList<>();
-                    for (List<Object> rightTuple : rightTuples) {
-                        for (String ignored : leftColumns) {
+                    // si le tuple n'est pas encore dans la liste
+                    if(!l.contains(leftTuple)) {
+                        List<Object> correctionTuple = new ArrayList<>();
+                        for (List<Object> rightTuple : rightTuples) {
+                            for (String ignored : leftColumns) {
                                 correctionTuple = new ArrayList<>(Collections.nCopies(rightTuple.size(), null));
                                 break;
+                            }
+                            break;
                         }
-                        break;
-                    }
-                    if (rightTuples.size() != 0) {
-                        // Sinon, on doit renvoyer le tuple correcteur directement et donc arreter
-                        // l'evaluation de l'EGD
-                        // On crée le tuple droit avec full null, puis on rempli les commonColumns avec
-                        // les valeur de tuple gauche
-                        for (String leftColumn : leftColumns) {
-                            int index_right = rightTable.getColumnIndex(leftColumn);
-                            correctionTuple.set(index_right, leftTuple.get(leftTable.getColumnIndex(leftColumn)));
+                        if (rightTuples.size() != 0) {
+                            // Sinon, on doit renvoyer le tuple correcteur directement et donc arreter
+                            // l'evaluation de l'EGD
+                            // On crée le tuple droit avec full null, puis on rempli les commonColumns avec
+                            // les valeur de tuple gauche
+                            for (String leftColumn : leftColumns) {
+                                int index_right = rightTable.getColumnIndex(leftColumn);
+                                correctionTuple.set(index_right, leftTuple.get(leftTable.getColumnIndex(leftColumn)));
+                            }
+                            l.add(leftTuple);
+                            return Pair.of(rightTable, correctionTuple);
                         }
-                        return Pair.of(rightTable,correctionTuple);
                     }
                 }
             }

@@ -11,9 +11,7 @@ import fr.uparis.database.Table;
 
 public class Skolem {
 
-    public static boolean obliviousSkolemChase(Database database, long maxExecutionTimeMillis) {
-        long startTime = System.currentTimeMillis();
-        long endTime = startTime + maxExecutionTimeMillis;
+    public static boolean obliviousSkolemChase(Database database) {
 
         //liste de tuples
         try {
@@ -45,9 +43,6 @@ public class Skolem {
                         table.addRow(rowsToAdd, database);
                         System.out.println("TGD update:" + rowsToAdd);
                         toAdd = tgd.isSatisfiedObliviousSkolem(listLeft, listRight);
-                        if(System.currentTimeMillis() >= endTime){
-                            return true; // si le temps est écoulé, fin de l'algo
-                        }
                     }
                 }
             }

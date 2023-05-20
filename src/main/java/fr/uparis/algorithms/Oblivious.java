@@ -18,6 +18,7 @@ public class Oblivious {
         //liste de tuples
         try {
             for (GenerationDependencies generationDependency : database.getGenerationDependencies()) {
+                // liste qui contient les tuples deja traitées
                 ArrayList<List<Object>> list = new ArrayList<>();
                 // On vérifie pour chaque tuple de table si generationDependency.corps est
                 // satisfaite

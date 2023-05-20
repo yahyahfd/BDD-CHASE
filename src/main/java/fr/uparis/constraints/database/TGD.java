@@ -155,4 +155,61 @@ public class TGD extends GenerationDependencies {
         }
         return null;
     }
+
+    public Pair<Table, List<Object>> isSatisfiedObliviousSkolem(ArrayList<List<Object>> listLeft, ArrayList<List<Object>> listRight) throws FormatException {
+        Set<Pair<Table, List<List<Object>>>> left = filterTable(getRelationalAtomsLeft());
+        Set<Pair<Table, List<List<Object>>>> right = filterTable(relationalAtomsRight);
+
+        for (Pair<Table, List<List<Object>>> leftPair : left) {// Pour chaque Relation à gauche (R1(x))
+            Table leftTable = leftPair.getLeft();
+            List<String> leftColumns = leftTable.getColumns();
+            for (Pair<Table, List<List<Object>>> rightPair : right) {// Pour chaque relation à droite (R2(x))
+                Table rightTable = rightPair.getLeft();
+                List<String> rightColumns = rightTable.getColumns();
+                // On vérifie si R1 et R2 ont des colonnes présentes dans la liste de
+                // commonValues
+                leftColumns.retainAll(commonValues);
+                rightColumns.retainAll(commonValues);
+                leftColumns.retainAll(rightColumns);// on stocke les colonnes en communs entre les 2 tables, mais aussi
+                // à retenir dans notre dépendance
+
+                // On doit maintenant parcours les tuples cad la partie droite de leftPair et
+                // rightPair
+                List<List<Object>> leftTuples = leftPair.getRight();
+                List<List<Object>> rightTuples = rightPair.getRight();
+                // On parcourt les Tuples des 2 côtés
+                for (List<Object> leftTuple : leftTuples) {
+                    // si le tuple n'est pas encore dans la liste
+                    if(!listLeft.contains(leftTuple)) {
+                        List<Object> correctionTuple = new ArrayList<>();
+                        for (List<Object> rightTuple : rightTuples) {
+                            if (!leftColumns.isEmpty()) {
+                                correctionTuple = new ArrayList<>(Collections.nCopies(rightTuple.size(), null));
+                                break;
+                            }
+                            break;
+                        }
+                        if (!rightTuples.isEmpty()) {
+                            // Sinon, on doit renvoyer le tuple correcteur directement et donc arreter
+                            // l'evaluation de l'EGD
+                            // On crée le tuple droit avec full null, puis on rempli les commonColumns avec
+                            // les valeur de tuple gauche
+                            for (String leftColumn : leftColumns) {
+                                int index_right = rightTable.getColumnIndex(leftColumn);
+                                correctionTuple.set(index_right, leftTuple.get(leftTable.getColumnIndex(leftColumn)));
+                                if(listRight.contains(correctionTuple)){
+                                    return null;
+                                } else {
+                                    listRight.add(correctionTuple);
+                                }
+                            }
+                            listLeft.add(leftTuple);
+                            return Pair.of(rightTable, correctionTuple);
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
 }

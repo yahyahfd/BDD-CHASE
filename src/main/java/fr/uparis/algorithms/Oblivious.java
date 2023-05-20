@@ -27,7 +27,7 @@ public class Oblivious {
                 // for, c'est deja le cas?)
 
 
-                if (generationDependency instanceof TGD tgd && !list.contains(generationDependency)) {
+                if (generationDependency instanceof TGD tgd) {
                     /*
                      * ajouter un nouveau tuple u a D
                      */

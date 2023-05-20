@@ -26,7 +26,7 @@ public class Skolem {
                 // for, c'est deja le cas?)
 
 
-                if (generationDependency instanceof TGD tgd && !listLeft.contains(generationDependency)) {
+                if (generationDependency instanceof TGD tgd) {
                     /*
                      * ajouter un nouveau tuple u a D
                      */

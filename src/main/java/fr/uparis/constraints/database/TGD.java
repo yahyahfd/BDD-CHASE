@@ -160,8 +160,6 @@ public class TGD extends GenerationDependencies {
         Set<Pair<Table, List<List<Object>>>> left = filterTable(getRelationalAtomsLeft());
         Set<Pair<Table, List<List<Object>>>> right = filterTable(relationalAtomsRight);
 
-        boolean foundInListRight = false;
-
         for (Pair<Table, List<List<Object>>> leftPair : left) {// Pour chaque Relation à gauche (R1(x))
             Table leftTable = leftPair.getLeft();
             List<String> leftColumns = leftTable.getColumns();

@@ -6,6 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
 
@@ -186,12 +187,23 @@ public class App
                     parseCSV(etudiants, myDb, "Etudiants.csv");
                     parseCSV(masters, myDb, "Masters.csv");
                 } else {
+                    choice = -1;
                     System.out.println("Choix invalide. Veuillez choisir une option valide.");
+                    scanner.next(); // Vider l'entrée invalide
                 }
             } catch (NumberFormatException e) {
+                choice = -1;
                 System.out.println("Vous devez rentrer un entier. Réessayez!");
-            }catch(Exception e){
+                scanner.next(); // Vider l'entrée invalide
+            }catch(InputMismatchException e){
+                choice = -1;
+                System.out.println("Vous devez rentrer un entier. Réessayez!");
+                scanner.next(); // Vider l'entrée invalide
+            }
+            catch(Exception e){
+                choice = -1;
                 e.printStackTrace();
+                scanner.next(); // Vider l'entrée invalide
             }
         }
 
@@ -207,13 +219,53 @@ public class App
         }
         
         printGenerationDependencies(myDb);
-        //Standard.chase(myDb);
-        //Oblivious.obliviousChase(myDb, 5000);
-        Skolem.obliviousSkolemChase(myDb);
-        exportTableCSV(emprunts,"Emprunts_modifié.csv");
-        exportTableCSV(etudiants,"Etudiants_modifié.csv");
-        exportTableCSV(masters,"Masters_modifié.csv");
-        printGenerationDependencies(myDb);
+        Integer chooseAgain = -1;
+        while(!chooseAgain.equals(0)){
+            System.out.println("Veuillez choisir une option :");
+            System.out.println("0) Quitter");
+            System.out.println("1) Standard Chase");
+            System.out.println("2) Oblivious Chase (TGD ONLY)");
+            System.out.println("3) Oblivious Skolem Chase (TGD ONLY)");
+            try {
+                chooseAgain = scanner.nextInt();
+                if (chooseAgain.equals(1)) {
+                    System.out.println("Vous avez choisi de faire un standard chase.");
+                    Standard.chase(myDb);
+                } else if (chooseAgain.equals(2)) {
+                    System.out.println("Vous avez choisi de faire un oblivious chase. (TGD ONLY)");
+                    Oblivious.obliviousChase(myDb, 5000);
+                } else if (chooseAgain.equals(3)) {
+                    System.out.println("Vous avez choisi de faire un oblivious skolem chase (TGD ONLY)");
+                    Skolem.obliviousSkolemChase(myDb);
+                } else if (chooseAgain.equals(0)) {
+                    System.out.println("Au revoir");
+                    scanner.close();
+                    System.exit(0);
+                } else {
+                    chooseAgain = -1;
+                    System.out.println("Choix invalide. Veuillez choisir une option valide.");
+                    scanner.next(); // Vider l'entrée invalide
+                }
+            } catch (NumberFormatException e) {
+                chooseAgain = -1;
+                System.out.println("Vous devez rentrer un entier. Réessayez!");
+                scanner.next(); // Vider l'entrée invalide
+            }catch(InputMismatchException e){
+                chooseAgain = -1;
+                System.out.println("Vous devez rentrer un entier. Réessayez!");
+                scanner.next(); // Vider l'entrée invalide
+            }
+            catch(Exception e){
+                chooseAgain = -1;
+                e.printStackTrace();
+                scanner.next(); // Vider l'entrée invalide
+            }
+            exportTableCSV(emprunts,"Emprunts_modifié.csv");
+            exportTableCSV(etudiants,"Etudiants_modifié.csv");
+            exportTableCSV(masters,"Masters_modifié.csv");
+            printGenerationDependencies(myDb);
+        }
+        
         scanner.close();
     }
 
@@ -298,7 +350,6 @@ public class App
             }
         }
     }
-
 
     private static void printGenerationDependencies(Database myDb) throws FormatException, InvalidConditionException, TupleNotFoundException{
         // System.out.println(Database.evaluator.getVariables());

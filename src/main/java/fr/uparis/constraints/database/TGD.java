@@ -131,13 +131,13 @@ public class TGD extends GenerationDependencies {
                     if(!l.contains(leftTuple)) {
                         List<Object> correctionTuple = new ArrayList<>();
                         for (List<Object> rightTuple : rightTuples) {
-                            for (String ignored : leftColumns) {
+                            if (!leftColumns.isEmpty()) {
                                 correctionTuple = new ArrayList<>(Collections.nCopies(rightTuple.size(), null));
                                 break;
                             }
                             break;
                         }
-                        if (rightTuples.size() != 0) {
+                        if (!rightTuples.isEmpty()) {
                             // Sinon, on doit renvoyer le tuple correcteur directement et donc arreter
                             // l'evaluation de l'EGD
                             // On crée le tuple droit avec full null, puis on rempli les commonColumns avec

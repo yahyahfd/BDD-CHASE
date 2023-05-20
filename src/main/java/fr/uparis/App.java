@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import fr.uparis.algorithms.Oblivious;
+import fr.uparis.algorithms.Skolem;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import com.opencsv.CSVWriter;
@@ -207,7 +208,8 @@ public class App
         
         printGenerationDependencies(myDb);
         //Standard.chase(myDb);
-        Oblivious.obliviousChase(myDb, 5000);
+        //Oblivious.obliviousChase(myDb, 5000);
+        Skolem.obliviousSkolemChase(myDb);
         exportTableCSV(emprunts,"Emprunts_modifié.csv");
         exportTableCSV(etudiants,"Etudiants_modifié.csv");
         exportTableCSV(masters,"Masters_modifié.csv");
